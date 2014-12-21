@@ -1,0 +1,201 @@
+/* Main body */
+
+body {
+    background-color: #222430;
+    color: #FFFFFF;
+    font-family: sans-serif;
+}
+
+/* Buttons */
+
+.myButton.enabled {
+    width: 96px;
+    height: 36px;
+    font-family: sans-serif;
+    color: #000000;
+}
+
+.myButton.disabled {
+    background-color: #222430;
+    width: 96px;
+    height: 36px;
+    font-family: sans-serif;
+    color: #999999;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+}
+
+.myButton.questComplete {
+    background-color: #00EE77;
+    border-color: #00EE77;
+    font-weight: bold;
+    width: 96px;
+    height: 36px;
+    font-family: sans-serif;
+    color: #000000;
+    box-shadow: 0px 0px 5px #00EE77;
+    -moz-border-radius: 2px;
+    border-radius: 2px;
+}
+
+/* Tables */
+
+table {
+    border: 1px solid #FFFFFF;
+}
+
+td {
+    padding: 10px;
+    border: 1px solid;
+}
+
+th {
+    text-align: center;
+    padding-top: 5px;
+    padding-bottom: 5px;
+}
+
+.tableImage td {
+    width: 64px;
+    height: 64px;
+    border: 1px solid #FFFFFF;
+    text-align: center;
+    padding: 0px;
+}
+
+td img {
+    display: block;
+    margin: 0 auto;
+}
+
+.enemyTable {
+    height: 210px;
+}
+
+.enemyTable th {
+    width: 100px;
+}
+
+.enemyTable td {
+    border: none;
+}
+
+.questTable {
+    margin-bottom: 20px;
+}
+
+.questTable th {
+    background-color: #2F3947;
+}
+
+.questTable tr.complete {
+    background-color: #225430;
+}
+
+.enemyTable td img.active {
+    border: solid 2px;
+    border-color: #00EE77;
+    box-shadow: 0px 0px 5px #00EE77;
+    -moz-border-radius: 12px;
+    border-radius: 12px;
+}
+
+.enemyTable td img.inactive {
+    border: solid 2px;
+    border-color: #FFFFFF;
+    -moz-border-radius: 12px;
+    border-radius: 12px;
+}
+
+.heroTable {
+
+}
+
+/* Images */
+
+img {
+    padding: 0;
+    margin: 0;
+}
+
+/* Progress Bar */
+
+.progress {
+    position: relative;
+    border: 0px solid #000000;
+    margin: 0;
+    padding: 0;
+}
+
+.progress span {
+    position: absolute;
+    display: block;
+    width: 100%;
+    color: #000000;
+}
+
+.progress-bar {
+    min-width: 0px !important;
+    -webkit-transition: none;
+    -moz-transition: none;
+    -ms-transition: none;
+    -o-transition: none;
+    transition: none;
+}
+
+/* Fixes */
+
+.fix-padding {
+    padding-left: 0px !important;
+    padding-right: 0px !important;
+}
+
+/* Item Tooltips */
+
+.item-header {
+    padding: 10px 5px 10px 5px;
+    margin: 0px;
+    font-weight: bold;
+}
+
+div.rarity-normal {
+    background-color: #DDDDDD;
+    color: #000000;
+}
+
+div.rarity-magic {
+    background-color: #445588;
+    color: #000000;
+}
+
+div.rarity-rare {
+    background-color: #FFBB00;
+    color: #000000;
+}
+
+div.rarity-mystical {
+    background-color: #996622;
+    color: #000000;
+}
+
+div.rarity-set {
+    background-color: #00BB44;
+    color: #000000;
+}
+
+.ui-tooltip {
+    border-width: 2px !important;
+    border-color: #000000 !important;
+    padding: 0px !important;
+    margin: 0px !important;
+    box-shadow: 10px 10px 10px rgba(0, 0, 0, 0.75) !important;
+    -moz-border-radius: 0px !important;
+    border-radius: 0px !important;
+}
+
+.ui-tooltip-content {
+    background-color: #222233;
+    color: #EEEEEE;
+    padding: 0px !important;
+    margin: 0px !important;
+}

@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Runes</title>
+        <meta charset="UTF-8"></meta>
+        <link rel="stylesheet" type="text/css" href="bootstrap.min.css"></link>
+        <link rel="stylesheet" type="text/css" href="custom.css"></link>
+        <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css"></link>
+        <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+        <script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
+        <script>
+            $.widget.bridge('uitooltip', $.ui.tooltip);
+        </script>
+        <script src="bootstrap.min.js"></script>
+        <script src="angular.min.js"></script>
+        <script src="underscore-min.js"></script>
+        <script src="runes.js"></script>
+    </head>
+
+    <body ng-app="runes">
+        <div ng-controller="ContentController">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-lg-9 col-md-8 fix-padding">
+                        Items:
+                        <table class="itemTable">
+                            <tr>
+                                <th>Head</th>
+                                <th>Chest</th>
+                                <th>Hands</th>
+                                <th>Legs</th>
+                                <th>Feet</th>
+                                <th>Ring 1</th>
+                                <th>Ring 2</th>
+                                <th>Amulet</th>
+                            </tr>
+                            <tr>
+                                <td class="tableImage"><item data="heroItems.head"></item></td>
+                                <td class="tableImage"><item data="heroItems.chest"></item></td>
+                                <td class="tableImage"><item data="heroItems.hands"></item></td>
+                                <td class="tableImage"><item data="heroItems.legs"></item></td>
+                                <td class="tableImage"><item data="heroItems.feet"></item></td>
+                                <td class="tableImage"><item data="heroItems.ringLeft"></item></td>
+                                <td class="tableImage"><item data="heroItems.ringRight"></item></td>
+                                <td class="tableImage"><item data="heroItems.amulet"></item></td>
+                            </tr>
+                        </table><br>
+
+                        <table class="enemyTable">
+                            <tr>
+                                <th ng-repeat="newEnemy in enemyBoard.board">{{newEnemy.enemy.name}}</th>
+                            </tr>
+                            <tr>
+                                <td class="tableImage" ng-repeat="newEnemy in enemyBoard.board"><img src={{newEnemy.enemy.image}} class="item-tooltip" ng-class="{active: newEnemy.active == true, inactive: newEnemy.active == false}" ng-click="newEnemy.activate()"></td>
+                            </tr>
+                            <tr>
+                                <td ng-repeat="newEnemy in enemyBoard.board">
+                                    <div class="progress" ng-hide="newEnemy.getArmour().armour <= 0">
+                                        <div class="progress-bar" role="progressbar" aria-valuenow="{{newEnemy.getArmour().armour}}" aria-valuemin="0" aria-valuemax="{{newEnemy.getArmour().maxArmour}}" ng-style="{width: ((newEnemy.getArmour().armour / newEnemy.getArmour().maxArmour * 100) + '%')}">
+                                            <span>{{newEnemy.getArmour().armour}} / {{newEnemy.getArmour().maxArmour}}</span>
+                                        </div>
+                                    </div>
+
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{newEnemy.getHealth().health}}" aria-valuemin="0" aria-valuemax="{{newEnemy.getHealth().maxHealth}}" ng-style="{width: ((newEnemy.getHealth().health / newEnemy.getHealth().maxHealth * 100) + '%')}">
+                                            <span>{{newEnemy.getHealth().health}} / {{newEnemy.getHealth().maxHealth}}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                        </table>
+                        <br>
+                        <table class="heroTable" width="200px">
+                            <tr>
+                                <td colspan=2>
+                                    <div class="progress">
+                                        <div class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" ng-style="{width: viewHelpers.getActionBarPercent() + '%'}">
+                                            <span>Action</span>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    Class
+                                </td>
+                                <td>
+                                    {{hero.class}}
+                                </td>
+                            </tr>
+                        </table>
+                        <br>
+                        <table>
+                            <tr>
+                                <td>
+                                    Energy: {{energy}}<br>
+                                </td>
+                                <td ng-repeat="lvl in levels">
+                                    <button class="myButton enabled" ng-click="buttonClick(lvl.value)" ng-hide="lvl.status">+{{lvl.value}}</button>
+                                </td>
+                            </tr>
+                        </table>
+                        <br>
+                    </div>
+                    <div class="col-lg-3 col-md-4 fix-padding">
+                        <table class="questTable" width="100%" ng-repeat="quest in questLog">
+                            <tr>
+                                <th colspan=2>
+                                    {{quest.name}}
+                                </th>
+                            </tr>
+                            <tr>
+                                <td colspan=2>
+                                    {{quest.description}}
+                                </td>
+                            </tr>
+                            <tr ng-repeat="objective in quest.objectives" ng-class="{complete: objective.status === viewHelpers.constants.quest.status.COMPLETE}">
+                                <td>
+                                    {{objective.target.name}}
+                                </td>
+                                <td width="100px" align="center">
+                                    {{objective.currentAmount}} / {{objective.amount}}
+                                </td>
+                            </tr>
+                            <tr>
+                                <td>
+                                    <div ng-repeat="(reward, value) in quest.rewards">
+                                        {{reward}}: {{value}}
+                                    </div>
+                                </td>
+                                <td align="center">
+                                    <button class="myButton" ng-class="{questComplete: quest.status === viewHelpers.constants.quest.status.COMPLETE, disabled: quest.status === viewHelpers.constants.quest.status.INCOMPLETE}" ng-disabled="quest.status === viewHelpers.constants.quest.status.INCOMPLETE" ng-click="viewHelpers.completeQuest(quest)">Complete</button>
+                                </td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <div class="item-tooltip">
+                Sockets: <font color='#ff6600'>
+                <span class="item-tooltip-sockets">
+                    #
+                </span>
+                </font><br>Image: 
+                <span class="item-tooltip-image">
+                    Image
+                </span>
+            </div>
+            
+            <!--<button class="myButton" ng-click="buttonClick(1)" ng-hide="levels[1]['status']">+1</button><br>
+            <button class="myButton" ng-click="buttonClick(5)" ng-hide="levels[2]['status']">+5</button><br>
+            <button class="myButton" ng-click="buttonClick(10)" ng-hide="levels[3]['status']">+10</button><br>-->
+        </div>
+    </body>
+
+</html>
