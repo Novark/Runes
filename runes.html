@@ -6,7 +6,7 @@
         <link rel="stylesheet" type="text/css" href="bootstrap.min.css"></link>
         <link rel="stylesheet" type="text/css" href="custom.css"></link>
         <link rel="stylesheet" href="http://code.jquery.com/ui/1.11.2/themes/smoothness/jquery-ui.css"></link>
-        <script src="http://code.jquery.com/jquery-1.11.1.js"></script>
+        <script src="http://code.jquery.com/jquery-1.11.2.min.js"></script>
         <script src="http://code.jquery.com/ui/1.11.2/jquery-ui.js"></script>
         <script>
             $.widget.bridge('uitooltip', $.ui.tooltip);
@@ -14,143 +14,309 @@
         <script src="bootstrap.min.js"></script>
         <script src="angular.min.js"></script>
         <script src="underscore-min.js"></script>
-        <script src="runes.js"></script>
+        <script src="runes3.js"></script>
     </head>
 
     <body ng-app="runes">
         <div ng-controller="ContentController">
-            <div class="container-fluid">
-                <div class="row">
-                    <div class="col-lg-9 col-md-8 fix-padding">
-                        Items:
-                        <table class="itemTable">
-                            <tr>
-                                <th>Head</th>
-                                <th>Chest</th>
-                                <th>Hands</th>
-                                <th>Legs</th>
-                                <th>Feet</th>
-                                <th>Ring 1</th>
-                                <th>Ring 2</th>
-                                <th>Amulet</th>
-                            </tr>
-                            <tr>
-                                <td class="tableImage"><item data="heroItems.head"></item></td>
-                                <td class="tableImage"><item data="heroItems.chest"></item></td>
-                                <td class="tableImage"><item data="heroItems.hands"></item></td>
-                                <td class="tableImage"><item data="heroItems.legs"></item></td>
-                                <td class="tableImage"><item data="heroItems.feet"></item></td>
-                                <td class="tableImage"><item data="heroItems.ringLeft"></item></td>
-                                <td class="tableImage"><item data="heroItems.ringRight"></item></td>
-                                <td class="tableImage"><item data="heroItems.amulet"></item></td>
-                            </tr>
-                        </table><br>
 
-                        <table class="enemyTable">
-                            <tr>
-                                <th ng-repeat="newEnemy in enemyBoard.board">{{newEnemy.enemy.name}}</th>
-                            </tr>
-                            <tr>
-                                <td class="tableImage" ng-repeat="newEnemy in enemyBoard.board"><img src={{newEnemy.enemy.image}} class="item-tooltip" ng-class="{active: newEnemy.active == true, inactive: newEnemy.active == false}" ng-click="newEnemy.activate()"></td>
-                            </tr>
-                            <tr>
-                                <td ng-repeat="newEnemy in enemyBoard.board">
-                                    <div class="progress" ng-hide="newEnemy.getArmour().armour <= 0">
-                                        <div class="progress-bar" role="progressbar" aria-valuenow="{{newEnemy.getArmour().armour}}" aria-valuemin="0" aria-valuemax="{{newEnemy.getArmour().maxArmour}}" ng-style="{width: ((newEnemy.getArmour().armour / newEnemy.getArmour().maxArmour * 100) + '%')}">
-                                            <span>{{newEnemy.getArmour().armour}} / {{newEnemy.getArmour().maxArmour}}</span>
-                                        </div>
-                                    </div>
-
-                                    <div class="progress">
-                                        <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{newEnemy.getHealth().health}}" aria-valuemin="0" aria-valuemax="{{newEnemy.getHealth().maxHealth}}" ng-style="{width: ((newEnemy.getHealth().health / newEnemy.getHealth().maxHealth * 100) + '%')}">
-                                            <span>{{newEnemy.getHealth().health}} / {{newEnemy.getHealth().maxHealth}}</span>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                        </table>
-                        <br>
-                        <table class="heroTable" width="200px">
-                            <tr>
-                                <td colspan=2>
-                                    <div class="progress">
-                                        <div class="progress-bar progress-bar-warning" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" ng-style="{width: viewHelpers.getActionBarPercent() + '%'}">
-                                            <span>Action</span>
-                                        </div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    Class
-                                </td>
-                                <td>
-                                    {{hero.class}}
-                                </td>
-                            </tr>
-                        </table>
-                        <br>
-                        <table>
-                            <tr>
-                                <td>
-                                    Energy: {{energy}}<br>
-                                </td>
-                                <td ng-repeat="lvl in levels">
-                                    <button class="myButton enabled" ng-click="buttonClick(lvl.value)" ng-hide="lvl.status">+{{lvl.value}}</button>
-                                </td>
-                            </tr>
-                        </table>
-                        <br>
+            <!-- Navigation -->
+            <nav class="navbar navbar-default">
+                <div class="container-fluid">
+                    <div class="navbar-header">
+                        <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+                            <span class="sr-only">Toggle navigation</span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                        </button>
+                        <a href="#" class="navbar-brand">Runes</a>
                     </div>
-                    <div class="col-lg-3 col-md-4 fix-padding">
-                        <table class="questTable" width="100%" ng-repeat="quest in questLog">
-                            <tr>
-                                <th colspan=2>
-                                    {{quest.name}}
-                                </th>
-                            </tr>
-                            <tr>
-                                <td colspan=2>
-                                    {{quest.description}}
-                                </td>
-                            </tr>
-                            <tr ng-repeat="objective in quest.objectives" ng-class="{complete: objective.status === viewHelpers.constants.quest.status.COMPLETE}">
-                                <td>
-                                    {{objective.target.name}}
-                                </td>
-                                <td width="100px" align="center">
-                                    {{objective.currentAmount}} / {{objective.amount}}
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div ng-repeat="(reward, value) in quest.rewards">
-                                        {{reward}}: {{value}}
-                                    </div>
-                                </td>
-                                <td align="center">
-                                    <button class="myButton" ng-class="{questComplete: quest.status === viewHelpers.constants.quest.status.COMPLETE, disabled: quest.status === viewHelpers.constants.quest.status.INCOMPLETE}" ng-disabled="quest.status === viewHelpers.constants.quest.status.INCOMPLETE" ng-click="viewHelpers.completeQuest(quest)">Complete</button>
-                                </td>
-                            </tr>
-                        </table>
+
+                    <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
+                        <ul class="nav navbar-nav">
+                            <!--
+                            <li class="active"><a href="#">Link<span class="sr-only">(current)</span></a></li>
+                            <li class="dropdown">
+                                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">Dropdown<span class="caret"></span></a>
+                                <ul class="dropdown-menu" role="menu">
+                                    <li><a href="#">Hero 1</a></li>
+                                    <li><a href="#">Hero 2</a></li>
+                                    <li><a href="#">Hero 3</a></li>
+                                </ul>
+                            </li>
+                            -->
+                            <li><a href="#" ng-click="viewHelpers.setGameState(viewHelpers.constants.game.state.PLAY)">Play</a></li>
+                            <li><a href="#" ng-click="viewHelpers.setGameState(viewHelpers.constants.game.state.HERO)">Hero</a></li>
+                            <li><a href="#" ng-click="viewHelpers.setGameState(viewHelpers.constants.game.state.INVENTORY)">Inventory</a></li>
+                            <li><a href="#" ng-click="viewHelpers.setGameState(viewHelpers.constants.game.state.QUESTS)">Quests</a></li>
+                        </ul>
+                </div>
+            </nav>
+
+
+
+
+            <!-- Content -->
+            <div class="container-fluid">
+
+                <!-- Panel #1 -->
+                <div ng-show="viewHelpers.getGameState() == viewHelpers.constants.game.state.PLAY">
+                    <div class="row">
+                        <div class="col-lg-9 col-md-8 fix-padding">
+                            Items:
+                            <table class="itemTable">
+                                <tr>
+                                    <th>Weapon</th>
+                                    <th>Head</th>
+                                    <th>Chest</th>
+                                    <th>Hands</th>
+                                    <th>Legs</th>
+                                    <th>Feet</th>
+                                    <th>Ring 1</th>
+                                    <th>Ring 2</th>
+                                    <th>Amulet</th>
+                                </tr>
+                                <tr>
+                                    <td class="tableImage"><item helper="tooltipHelpers" data="hero.equipment.weapon" slot="weapon"></item></td>
+                                    <td class="tableImage"><item helper="tooltipHelpers" data="hero.equipment.head" slot="head"></item></td>
+                                    <td class="tableImage"><item helper="tooltipHelpers" data="hero.equipment.chest" slot="chest"></item></td>
+                                    <td class="tableImage"><item helper="tooltipHelpers" data="hero.equipment.hands" slot="hands"></item></td>
+                                    <td class="tableImage"><item helper="tooltipHelpers" data="hero.equipment.legs" slot="legs"></item></td>
+                                    <td class="tableImage"><item helper="tooltipHelpers" data="hero.equipment.feet" slot="feet"></item></td>
+                                    <td class="tableImage"><item helper="tooltipHelpers" data="hero.equipment.ringLeft" slot="ringLeft"></item></td>
+                                    <td class="tableImage"><item helper="tooltipHelpers" data="hero.equipment.ringRight" slot="ringRight"></item></td>
+                                    <td class="tableImage"><item helper="tooltipHelpers" data="hero.equipment.amulet" slot="amulet"></item></td>
+                                </tr>
+                            </table><br>
+
+                            <table class="enemyTable">
+                                <tr>
+                                    <th ng-repeat="newEnemy in enemyBoard.board">{{newEnemy.enemy.name}}</th>
+                                </tr>
+                                <tr>
+                                    <td class="tableImage" ng-repeat="newEnemy in enemyBoard.board"><img ng-src="{{newEnemy.enemy.image}}" class="item-tooltip" ng-class="{active: newEnemy.active == true, inactive: newEnemy.active == false}" ng-click="newEnemy.activate()"></td>
+                                </tr>
+                                <tr>
+                                    <td ng-repeat="newEnemy in enemyBoard.board">
+                                        <div class="progress" ng-hide="newEnemy.getArmour().armour <= 0">
+                                            <div class="progress-bar" role="progressbar" aria-valuenow="{{newEnemy.getArmour().armour}}" aria-valuemin="0" aria-valuemax="{{newEnemy.getArmour().armourMax}}" ng-style="{width: ((newEnemy.getArmour().armour / newEnemy.getArmour().armourMax * 100) + '%')}">
+                                                <span>{{newEnemy.getArmour().armour}} / {{newEnemy.getArmour().armourMax}}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="progress">
+                                            <div class="progress-bar progress-bar-success" role="progressbar" aria-valuenow="{{newEnemy.getHealth().health}}" aria-valuemin="0" aria-valuemax="{{newEnemy.getHealth().healthMax}}" ng-style="{width: ((newEnemy.getHealth().health / newEnemy.getHealth().healthMax * 100) + '%')}">
+                                                <span>{{newEnemy.getHealth().health}} / {{newEnemy.getHealth().healthMax}}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                            <br>
+                            <table class="heroTable" width="200px">
+                                <tr>
+                                    <td colspan=2>
+                                        <div class="progress">
+                                            <div class="progress-bar progress-bar-warning no-animations" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" ng-style="{width: viewHelpers.getActionBarPercent() + '%'}">
+                                                <span>Action</span>
+                                            </div>
+                                        </div>
+                                        <!--<progressbar data="viewHelpers.getActionBarPercent()"></progressbar>-->
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td colspan=2>
+                                        <div class="progress">
+                                            <div class="progress-bar" role="progressbar" aria-valuenow="50" aria-valuemin="0" aria-valuemax="100" ng-style="{width: viewHelpers.getManaBarPercent() + '%'}">
+                                                <span>{{hero.stats.mana.getEntryTotal("mana")}} / {{hero.stats.mana.getEntryTotal("manaMax")}}</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </table>
+                            <br>
+                            Skills:
+                            <table class="skillTable">
+                                <tr>
+                                    <td class="tableImage" ng-repeat="skill in skills">
+                                        <skill data="skill" helper="tooltipHelpers" ng-click="viewHelpers.skillToggle(skill)"></skill>
+                                        <!--<span style="width: 68px; height: 68px; background-image: url('{{skill.image}}'); display: block; border: 2px solid #DDDDDD" ng-class="{active: skill.active === true, inactive: skill.active === false}" ng-click="viewHelpers.skillToggle(skill)"></span>
+                                        <img src={{skill.image}} class="skill-tooltip" ng-show="viewHelpers.checkSkillUnlock(skill) == true" ng-class="{active: newEnemy.active == true, inactive: newEnemy.active == false}">-->
+                                    </td>
+                                </tr>
+                            </table>
+                            <br>
+                            <table>
+                                <tr>
+                                    <td>
+                                        Energy: {{energy}}<br>
+                                    </td>
+                                    <td ng-repeat="lvl in levels">
+                                        <button class="myButton enabled" ng-click="buttonClick(lvl.value)" ng-hide="lvl.status">+{{lvl.value}}</button>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <button class="myButton enabled" ng-click="buttonClick2(lvl.value)">+Item</button>
+                                    </td>
+                                </tr>
+                            </table>
+                            <br>
+                            Average Timer Drift: {{getAverageTimerPerformance()}} ms
+                            <br>
+                            Source: {{tooltipHelpers.itemSource}}
+                            <br><br>
+                            Target: {{tooltipHelpers.itemTarget}}
+                        </div>
+                        <div class="col-lg-3 col-md-4 fix-padding">
+                            <table class="questTable" width="100%" ng-repeat="quest in hero.questLog">
+                                <tr>
+                                    <th colspan=2>
+                                        {{quest.name}}
+                                    </th>
+                                </tr>
+                                <tr>
+                                    <td colspan=2>
+                                        {{quest.description}}
+                                    </td>
+                                </tr>
+                                <tr ng-repeat="objective in quest.objectives" ng-class="{complete: objective.status === viewHelpers.constants.quest.status.COMPLETE}">
+                                    <td>
+                                        {{objective.target.name}}
+                                    </td>
+                                    <td width="100px" align="center">
+                                        {{objective.currentAmount}} / {{objective.amount}}
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>
+                                        <div ng-repeat="(reward, value) in quest.rewards">
+                                            {{reward}}: {{value}}
+                                        </div>
+                                    </td>
+                                    <td align="center">
+                                        <button class="myButton" ng-class="{questComplete: quest.status === viewHelpers.constants.quest.status.COMPLETE, disabled: quest.status === viewHelpers.constants.quest.status.INCOMPLETE}" ng-disabled="quest.status === viewHelpers.constants.quest.status.INCOMPLETE" ng-click="viewHelpers.completeQuest(quest)">Complete</button>
+                                    </td>
+                                </tr>
+                            </table><br>
+                            <table class="inventoryTable" width="100%">
+                                <tr>
+                                    <td ng-repeat="item in hero.inventory"><item helper="tooltipHelpers" data="item" slot="inventory"></item></td>
+                                </tr>
+                            </table>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div class="item-tooltip">
-                Sockets: <font color='#ff6600'>
-                <span class="item-tooltip-sockets">
-                    #
-                </span>
-                </font><br>Image: 
-                <span class="item-tooltip-image">
-                    Image
-                </span>
+                <!-- Panel #2 -->
+                <div ng-show="viewHelpers.getGameState() == viewHelpers.constants.game.state.HERO">
+                    <table class="heroTable" width="400px">
+                        <th colspan="2">
+                            <h1>{{hero.name}}</h1>
+                        </th>
+                        <tr>
+                            <td>Class</td>
+                            <td>{{hero.class}}</td>
+                        </tr>
+                        <tr>
+                            <td>Floor</td>
+                            <td>{{viewHelpers.getFloorName()}}</td>
+                        </tr>
+                        <tr>
+                            <td>Strength</td>
+                            <td>{{hero.stats.strength.getEntryTotal("amount")}}</td>
+                        </tr>
+                        <tr>
+                            <td>Agility</td>
+                            <td>{{hero.stats.agility.getEntryTotal("amount")}}</td>
+                        </tr>
+                        <tr>
+                            <td>Intelligence</td>
+                            <td>{{hero.stats.intelligence.getEntryTotal("amount")}}</td>
+                        </tr>
+                        <tr>
+                            <td>Mana per Tick</td>
+                            <td>{{hero.stats.manaPerTick.getEntryTotal("manaPerTick")}}</td>
+                        </tr>
+                        <tr>
+                            <td>Mana Tick Rate</td>
+                            <td>{{hero.stats.manaTickRate.getEntryTotal("manaTickRate")}} seconds</td>
+                        </tr>
+                        <tr>
+                            <td>Critical Chance</td>
+                            <td>{{hero.stats.critChance.getEntryTotal("amount")}}%</td>
+                        </tr>
+                        <tr>
+                            <td>Critical Multiplier</td>
+                            <td>{{hero.stats.critMultiplier.getEntryTotal("amount")}}%</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Panel #3 -->
+                <div ng-show="viewHelpers.getGameState() == viewHelpers.constants.game.state.INVENTORY">
+                    <table class="inventoryTable" width="100%">
+                        <tr ng-repeat="item in hero.inventory">
+                            <td>[{{item.rarity}}] {{item.itemName}}</td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Panel #4 -->
+                <div ng-show="viewHelpers.getGameState() == viewHelpers.constants.game.state.QUESTS">
+                    <table class="questTable" width="50%" ng-repeat="quest in hero.questLog">
+                        <tr>
+                            <th colspan=2>
+                                {{quest.name}}
+                            </th>
+                        </tr>
+                        <tr>
+                            <td colspan=2>
+                                {{quest.description}}
+                            </td>
+                        </tr>
+                        <tr ng-repeat="objective in quest.objectives" ng-class="{complete: objective.status === viewHelpers.constants.quest.status.COMPLETE}">
+                            <td>
+                                {{objective.target.name}}
+                            </td>
+                            <td width="100px" align="center">
+                                {{objective.currentAmount}} / {{objective.amount}}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td>
+                                <div ng-repeat="(reward, value) in quest.rewards">
+                                    {{reward}}: {{value}}
+                                </div>
+                            </td>
+                            <td align="center">
+                                <button class="myButton" ng-class="{questComplete: quest.status === viewHelpers.constants.quest.status.COMPLETE, disabled: quest.status === viewHelpers.constants.quest.status.INCOMPLETE}" ng-disabled="quest.status === viewHelpers.constants.quest.status.INCOMPLETE" ng-click="viewHelpers.completeQuest(quest)">Complete</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
+
+                <!-- Panel #5 -->
+                <div ng-show="viewHelpers.getGameState() == viewHelpers.constants.game.state.START">
+                    <form>
+                        <table style="border: 0px none">
+                            <tr>
+                                <td style="border: 0px none">Your Name:</td>
+                                <td style="border: 0px none"><input type="text" class="form-control" style="width: 200px" ng-model="playerName" autofocus></input></td>
+                                <td style="border: 0px none"><button class="myButton disabled" ng-click="viewHelpers.verifyPlayerName(playerName)" type="submit">Play</button></td>
+                            </tr>
+                        </table>
+                    </form>
+                </div>
+
             </div>
             
-            <!--<button class="myButton" ng-click="buttonClick(1)" ng-hide="levels[1]['status']">+1</button><br>
+            <!--
+            <button class="myButton" ng-click="buttonClick(1)" ng-hide="levels[1]['status']">+1</button><br>
             <button class="myButton" ng-click="buttonClick(5)" ng-hide="levels[2]['status']">+5</button><br>
-            <button class="myButton" ng-click="buttonClick(10)" ng-hide="levels[3]['status']">+10</button><br>-->
+            <button class="myButton" ng-click="buttonClick(10)" ng-hide="levels[3]['status']">+10</button><br>
+            -->
         </div>
     </body>
 

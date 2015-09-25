@@ -1,4 +1,29 @@
-/* jslint multistr: true */
+/*jslint multistr: true */
+
+
+
+
+
+
+
+/*
+
+Bugs:
+
+Replacing an item in the inventory with an equipped item
+
+*/
+
+
+
+
+
+
+
+
+
+
+
 
 /*
 Notes:
@@ -13,7 +38,7 @@ Themes:
 7. Jungle (Ivory Tropics)
 8. Arcane (Realm of the Four)
 9. Sky (Shimmering Expanse)
-10. Celestial (Aurellis) / Aurellians
+10. Celestial (Aurellis) / Aurellians / Spectral Plains
 11. Overgrown Ruins
 12. Crypt
 
@@ -98,38 +123,82 @@ function newItem() {
     };
 }
 
+app.service("WorkerService", ['$q', function($q) {
+    return {
+        sendMessage : function(myData, atFunction, ostFunction) {
+            var worker = new Worker('worker.js');
+
+            worker.addEventListener('message', function(e) {
+                switch(e.data) {
+                    case "actionTimer":
+                        Function.call(atFunction());
+                        break;
+                    case "oneSecondTimer":
+                        Function.call(ostFunction());
+                        break;
+                }
+            }, false);
+
+            worker.postMessage(myData);
+        }
+    };
+
+}]);
+
 app.directive('item', function() {
-    var contentContainer;
     return {
         restrict: "E",
         scope: {
             itemData: "=data",
-            itemHelpers: "=helper"
+            itemHelpers: "=helper",
+            itemSlot: "@slot"
         },
         link: function(scope, element, attrs) {
             $(function() {
                 //Hover
-                $(element).hover(function() {
-                    $(element).find("span.item-inner").toggleClass("item-hover");
+                //$(element).hover(function() {
+                //    $(element).find("span.item-inner").toggleClass("item-hover");
+                //});
+
+                //Mouse Over
+                $(element).find("span.item-outer").mouseover(function() {
+                    $(element).find("span.item-inner").addClass("item-hover");
+                    //alert(JSON.stringify(scope.itemData));
+                });
+
+                //Mouse Out
+                $(element).find("span.item-outer").mouseout(function() {
+                    $(element).find("span.item-inner").removeClass("item-hover");
                 });
 
                 //Double Click
                 $(element).dblclick(function() {
-                    //alert("Double Clicked!");
-                    scope.itemHelpers.swapItems(scope.itemData);
+                    scope.itemHelpers.setItemSource(scope.itemData, scope.itemSlot);
+                    scope.itemHelpers.setItemTarget(null, scope.itemData.itemSlot);
+                    scope.itemHelpers.swapItems();
                 });
 
                 //Mouse Down
-                $(element).mousedown(function() {
+                $(element).find("span.item-outer").mousedown(function() {
                     $(this).css("z-index", 100);
                 });
 
                 //Draggable
-                $(element).draggable({
+                $(element).find("span.item-outer").draggable({
                     start: function(event, ui) {
+                        $(this).css("opacity", 0.25);
                         console.log("Start!");
+                        scope.itemHelpers.setItemSource(scope.itemData, scope.itemSlot);
+                        if (scope.itemData === null) {
+                            $(this).css("opacity", 1);
+                            return false;
+                        }
+                        //scope.itemHelpers.setTargetSource(scope.itemData);
                         //$(element).find("span.item-inner").removeClass("item-hover");
                         //$(ui.helper).find('.tooltip').hide();
+                    },
+                    stop: function(event, ui) {
+                        $(this).css("opacity", 1);
                     },
                     helper: 'clone',
                     revert: 'invalid',
@@ -146,63 +215,36 @@ app.directive('item', function() {
                     out: function(event, ui) {
                         console.log("out");
                         $(element).find("span.item-inner").removeClass("item-hover");
+                        return false;
                     },
 
                     drop: function(event, ui) {
                         console.log("Dropped!");
+                        $(element).find("span.item-outer").uitooltip();
+                        $(element).find("span.item-outer").uitooltip('disable');
+                        scope.itemHelpers.setItemTarget(scope.itemData, scope.itemSlot);
+                        setTimeout(function() {
+                            $(element).find("span.item-outer").uitooltip('enable');
+                            $(".ui-tooltip").css("display", "none");
+                            $(element).find("span.item-inner").removeClass("item-hover");
+                            scope.itemHelpers.swapItems();
+                        }, 1);
                         $(element).find("span.item-inner").removeClass("item-hover");
+                        return false;
                     }
                 });
 
                 //Tooltip
-                $(element).uitooltip({
+                $(element).find("span.item-outer").uitooltip({
                     items: "*",
-                    position: {at: "right+16 top-15"},
+                    position: {at: "right+20 top-15"},
                     tooltipClass: "tooltip-extend",
                     content: function() {
-                        var itemHTML = "";
-                        itemHTML += "<div class='item-tooltip'>";
-                        
-                        itemHTML += "<div class='item-header rarity-" + scope.itemData.rarity +"'>Prefix " + scope.itemData.name + " of Suffix</div>";
-                        
-                        //itemHTML += "<div class='item-divider'></div>";
-                        itemHTML += "<div class='item-information'>";
-                        itemHTML += "Item Type: " + scope.itemData.type + "<br>";
-                        itemHTML += "Damage: " + "1" + " to " + "3" + "<br>";
-                        if (scope.itemData.sockets !== 0) {
-                            itemHTML += "Sockets: <font color='#ff6600'>" + (scope.itemData.sockets).toString() + "</font>";
-                        } else {
-                            itemHTML += "Sockets: <font color='#ff6600'>None</font>";
+                        if (scope.itemData === null) {
+                            return false;
                         }
-                        itemHTML += "</div>";
-                        itemHTML += "<div class='item-divider'></div>";
-                        
-                        itemHTML += "<div class='item-mods'>";
-                        itemHTML += scope.itemData.image;
-                        itemHTML += "</div>";
-
-                        itemHTML += "</div>";
-
-                        /*
-                        itemHTML += "<div class='item-tooltip'>";
-                        itemHTML += "<div class='item-header rarity-" + scope.itemData.rarity +"'>Magic " + scope.itemData.name + " of Magicness</div>";
-                        itemHTML += "<div class='item-information'>";
-                        itemHTML += scope.itemData.type;
-                        itemHTML += "<div class='item-divider'></div>";
-                        itemHTML += "</div>";
-                        itemHTML += "<div class='item-mods'>";
-
-
-                        //if (scope.itemData.sockets !== 0) {
-                        //    itemHTML += "Sockets: <font color='#ff6600'>" + (scope.itemData.sockets).toString() + "</font>";
-                        //} else {
-                        //    itemHTML += "Sockets: <font color='#ff6600'>None</font>";
-                        //}
-
-                        itemHTML += "Image: " + scope.itemData.image;
-                        itemHTML += "</div>";
-                        itemHTML += "</div>";
-                        */
+                        console.log(scope.itemSlot);
+                        var itemHTML = scope.itemData.getHTMLHeader() + scope.itemData.getHTMLBody() + scope.itemData.getHTMLFooter();
                         return itemHTML;
                     },
                     //position: {my: "right center", at: "right top+16"},
@@ -216,19 +258,26 @@ app.directive('item', function() {
                     hide: {duration: 0}
                 });
                 $(element).click(function() {
+                    //$(".ui-tooltip").siblings(".ui-tooltip").css("display", "none");
                     //$(element).tooltip("close");
                 });
             });
         },
-        template: "<span class=\"item-outer\" style=\"width: 68px; height: 68px; background-image: url('bg_{{itemData.rarity}}.png'); display: block;\">\
-                    <span class=\"item-inner\" style=\"width: 68px; height: 68px; background-image: url('{{itemData.image}}'); display: block; border: 2px solid #DDDDDD\"></span></span>"
+        template: function(scope) {
+            var itemHTML = "";
+
+            itemHTML += "<span class=\"item-outer\" style=\"width: 68px; height: 68px; background-image: url('bg_{{itemData.rarity}}.png'); display: block;\">";
+            itemHTML += "<div style='position: relative;'><div class='item-quantity' quantity='{{itemData.getQuantity()}}'></div></div>";
+            itemHTML += "<span class=\"item-inner\" style=\"width: 68px; height: 68px; background-image: url('{{itemData.image}}'); display: block; border: 2px solid #000000\"></span></span>";
+
+            return itemHTML;
+        }()
         //template: "<img src={{itemData.type.image}} style='border: 2px solid #DDDDDD !important'>"
         //templateUrl: 'item.html'
     };
 });
 
 app.directive('skill', function() {
-    var contentContainer;
     return {
         restrict: "E",
         scope: {
@@ -248,7 +297,7 @@ app.directive('skill', function() {
                 //Tooltip
                 $(element).uitooltip({
                     items: "*",
-                    position: {at: "right+16 top-15"},
+                    position: {at: "right+7 top-15"},
                     tooltipClass: "tooltip-extend",
                     content: function() {
                         var skillHTML = "";
@@ -290,7 +339,7 @@ app.directive('skill', function() {
 
 
 
-app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', function(itemGenerator, $scope, $timeout) {
+app.controller('ContentController', ['itemGenerator', 'WorkerService', '$scope', '$timeout', function(itemGenerator, WorkerService, $scope, $timeout) {
 
     /*
     ----------------------------------------------------------------------------------------------------
@@ -371,7 +420,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
                     "CHEST": "Chest",
                     "HANDS": "Hands",
                     "LEGS": "Legs",
-                    "FEET": "Feet",
+                    "FEET": "Feet"
                 },
 
                 "jewellery": {
@@ -407,16 +456,32 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
             },
 
             "class": {
-                "WEAPON": 0,
-                "ARMOUR": 1
+                "WEAPON": "Weapon",
+                "ARMOUR": "Armour",
+                "RUNE": "Rune",
+                "QUESTITEM": "Quest Item",
+                "TRADEGOOD": "Trade Good"
             },
 
-            "quality": {
-                "NORMAL": 0,
-                "MAGIC:": 1,
-                "RARE": 2,
-                "SET": 3,
-                "MYSTICAL": 4
+            "rarity": {
+                "NORMAL": "normal",
+                "MAGIC": "magic",
+                "RARE": "rare",
+                "SET": "set",
+                "MYSTICAL": "mystical"
+            },
+
+            "slot": {
+                "HEAD": "head",
+                "CHEST": "chest",
+                "HANDS": "hands",
+                "LEGS": "legs",
+                "FEET": "feet",
+                "RINGRIGHT": "ringRight",
+                "RINGLEFT": "ringLeft",
+                "AMULET": "amulet",
+                "WEAPON": "weapon",
+                "OFFHAND": "offhand"
             }
         }
     };
@@ -477,6 +542,20 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
 
     */
 
+    //Contains all of the items that are currently equipped on the hero
+    var heroItems = {
+        "head": null,//{"type": 0, "image": "helm.png", "baseArmour": 5, "sockets": 1, "rarity": "mystical"},
+        "chest": null,//{"type": 0, "image": "temp.png", "baseArmour": 5, "sockets": 3, "rarity": "set"},
+        "hands": {"type": 0, "image": "temp2.png", "baseArmour": 5, "sockets": 2, "rarity": "magic"},
+        "legs": {"type": 0, "image": "temp3.png", "baseArmour": 5, "sockets": 4, "rarity": "normal"},
+        "feet": {"type": 0, "image": "temp.png", "baseArmour": 5, "sockets": 1, "rarity": "normal"},
+        "ringLeft": {"type": 0, "image": "temp2.png", "baseArmour": 5, "sockets": 0, "rarity": "magic"},
+        "ringRight": {"type": 0, "image": "temp3.png", "baseArmour": 5, "sockets": 0, "rarity": "rare"},
+        "amulet": null,
+        "weapon": null,
+        "offhand": null
+    };
+
     var heroBaseStats = {
         /* Defensive */
         "health": 50,
@@ -498,7 +577,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         "damageMax": 3,
         "critChance": 0.1,
         "critMultiplier": 5,
-        "aps": 5,
+        "aps": 1,
         "experience": 0
     };
 
@@ -506,17 +585,8 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
     $scope.hero = {
         "name": null,
         "stats": heroBaseStats,
-        "inventory": [
-            {"type": 0, "image": "helm.png", "baseArmour": 0, "sockets": 0, "rarity": "magic"},
-            {"type": 0, "image": "temp.png", "baseArmour": 0, "sockets": 0, "rarity": "set"},
-            {"type": 0, "image": "helm.png", "baseArmour": 0, "sockets": 0, "rarity": "normal"},
-            {"type": 0, "image": "temp2.png", "baseArmour": 0, "sockets": 0, "rarity": "magic"},
-            {"type": 0, "image": "helm.png", "baseArmour": 0, "sockets": 0, "rarity": "rare"},
-            {"type": 0, "image": "temp.png", "baseArmour": 0, "sockets": 0, "rarity": "rare"},
-            {"type": 0, "image": "temp2.png", "baseArmour": 0, "sockets": 0, "rarity": "magic"},
-            {"type": 0, "image": "temp.png", "baseArmour": 0, "sockets": 0, "rarity": "mystical"},
-            {"type": 0, "image": "helm.png", "baseArmour": 0, "sockets": 0, "rarity": "set"}
-        ],
+        "inventory": [],
+        "equipment": heroItems,
         "questLog": [],
         "inCombat": false,
         "target": null,
@@ -554,7 +624,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
             "name": "Pierce",
             "description": "Flavour text goes here",
             "unlocksAt": {"floor": 2, "strength": 15, "agility": 10, "intelligence": 5},
-            "image": "pierce.png",
+            "image": "shield.png",
             "type": constants.skill.type.ACTIVE,
             "active": false,
             "manaCost": 1,
@@ -577,11 +647,11 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
             }
         },
 
-        "magicMissile": {
-            "name": "Magic Missile",
+        "arcaneBarrage": {
+            "name": "Arcane Barrage",
             "description": "Flavour text goes here",
             "unlocksAt": {"floor": 1, "strength": 5, "agility": 5, "intelligence": 10},
-            "image": "magic2.png",
+            "image": "arcane.png",
             "type": constants.skill.type.ACTIVE,
             "active": false,
             "manaCost": 10,
@@ -803,14 +873,60 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
 
     /* Item Class */
     function Item() {
-        //An item is any object that can be placed in a player's inventory
+        //An item is any object that can be placed in a player's inventory, and shows a tooltip when hovered over with the cursor
+        this.image = null;
+        this.quantity = null;
     }
+
+    Item.prototype.setRarity = function(rarity) {
+        this.rarity = rarity;
+    };
+
+    Item.prototype.setItemName = function(itemName) {
+        this.itemName = itemName;
+    };
+
+    Item.prototype.getHTMLHeader = function() {
+        var itemHTML = "";
+
+        itemHTML += "<div class='item-tooltip'>";
+        itemHTML += "<div class='item-header rarity-" + this.rarity +"'>" + this.itemName + "</div>";
+
+        return itemHTML;
+    };
+
+    Item.prototype.getHTMLBody = function() {
+        return "Temporary";
+    };
+
+    Item.prototype.getHTMLFooter = function() {
+        return "</div>";
+    };
+
+    Item.prototype.getQuantity = function() {
+        if (this.quantity === null) {
+            return "";
+        } else {
+            return this.quantity;
+        }
+    };
 
     /* Equipable Class */
     function Equipable() {
-        //An equipable is any object that can be placed on a player's hero
+        //An equipable is any item that can be placed on a player's hero
         Item.call(this);
+        this.affixes = [];
+        this.affixDisplayText = [];
     }
+
+    Equipable.prototype = Object.create(Item.prototype);
+    Equipable.prototype.constructor = Equipable;
+    Equipable.prototype.addAffixes = function(affixes) {
+        this.affixes = affixes;
+        for (var affix in affixes) {
+            this.affixDisplayText.push(affixes[affix].displayText);
+        }
+    };
 
     /* Socketable Class */
     function Socketable() {
@@ -818,17 +934,96 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         Equipable.call(this); //May need to inherit from Item() instead of Equipable()...
     }
 
+    Socketable.prototype = Object.create(Item.prototype);
+    Socketable.prototype.constructor = Socketable;
+
     /* Weapon Class */
-    function Weapon() {
+    function Weapon(weaponData) {
         //A weapon is any object that can be used to attack enemies, and can be fitted into a hero's weapon slot
         Equipable.call(this);
+
+        this.id = weaponData.id;
+        this.image = weaponData.image;
+        this.itemType = weaponData.type;
+        this.itemClass = weaponData.class;
+        this.itemSlot = weaponData.slot;
+        this.damageMin = weaponData.damageBase[0];
+        this.damageMax = weaponData.damageBase[1];
+        this.critChance = 0;
+        this.aps = weaponData.apsBase;
+        this.sockets = 1;
     }
 
+    Weapon.prototype = Object.create(Equipable.prototype);
+    Weapon.prototype.constructor = Weapon;
+
+    Weapon.prototype.getHTMLBody = function() {
+        var itemHTML = "";
+
+        //itemHTML += "<div class='item-divider'></div>";
+        itemHTML += "<div class='item-information'>";
+        itemHTML += "Weapon Type: " + this.itemType + "<br>";
+        itemHTML += "Damage: " + this.damageMin + " to " + this.damageMax + "<br>";
+        itemHTML += "Attacks per Second: " + this.aps + "<br>";
+        if (this.sockets !== 0) {
+            itemHTML += "Sockets: <font color='#ff6600'>" + (this.sockets).toString() + "</font>";
+        } else {
+            itemHTML += "Sockets: <font color='#ff6600'>None</font>";
+        }
+        itemHTML += "</div>";
+
+        itemHTML += "<div class='item-divider'></div>";
+
+        itemHTML += "<div class='item-mods'>";
+        for (var affix in this.affixDisplayText) {
+            itemHTML += this.affixDisplayText[affix] + "<br>";
+        }
+        itemHTML += "</div>";
+
+        return itemHTML;
+    };
+
     /* Armour Class */
-    function Armour() {
+    function Armour(armourData) {
         //Armour is any object that can be fitted into any of a hero's armour slots
         Equipable.call(this);
+
+        this.id = armourData.id;
+        this.image = armourData.image;
+        this.itemType = armourData.type;
+        this.itemClass = armourData.class;
+        this.itemSlot = armourData.slot;
+        this.armour = 0;
+        this.sockets = 1;
     }
+
+    Armour.prototype = Object.create(Equipable.prototype);
+    Armour.prototype.constructor = Armour;
+
+    Armour.prototype.getHTMLBody = function() {
+        var itemHTML = "";
+
+        //itemHTML += "<div class='item-divider'></div>";
+        itemHTML += "<div class='item-information'>";
+        itemHTML += "Armour Type: " + this.itemType + "<br>";
+        itemHTML += "Armour: " + this.armour + "<br>";
+        if (this.sockets !== 0) {
+            itemHTML += "Sockets: <font color='#ff6600'>" + (this.sockets).toString() + "</font>";
+        } else {
+            itemHTML += "Sockets: <font color='#ff6600'>None</font>";
+        }
+        itemHTML += "</div>";
+
+        itemHTML += "<div class='item-divider'></div>";
+
+        itemHTML += "<div class='item-mods'>";
+        for (var affix in this.affixDisplayText) {
+            itemHTML += this.affixDisplayText[affix] + "<br>";
+        }
+        itemHTML += "</div>";
+
+        return itemHTML;
+    };
 
     /* Rune Class */
     function Rune() {
@@ -836,39 +1031,60 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         Socketable.call(this);
     }
 
+    Rune.prototype = Object.create(Socketable.prototype);
+    Rune.prototype.constructor = Rune;
+
     /* Quest Item Class */
     function QuestItem() {
         //A quest item is any object that is required for a specific quest
         Item.call(this);
     }
 
+    QuestItem.prototype = Object.create(Item.prototype);
+    QuestItem.prototype.constructor = QuestItem;
+
     /* Trade Good Class */
-    function TradeGood() {
+    function TradeGood(tradeGoodData) {
         //A trade good is any object that can be used in crafting, or sold to a vendor, but is not an equipable
         Item.call(this);
+
+        this.id = tradeGoodData.id;
+        this.setItemName(tradeGoodData.name);
+        this.rarity = "normal";
+        this.description = tradeGoodData.description;
+        this.image = tradeGoodData.image;
+        this.itemType = tradeGoodData.type;
+        this.itemClass = tradeGoodData.class;
+        this.stackSize = tradeGoodData.stackSize;
+        this.quantity = 1;
     }
 
+    TradeGood.prototype = Object.create(Item.prototype);
+    TradeGood.prototype.constructor = TradeGood;
 
+    TradeGood.prototype.getHTMLBody = function() {
+        var itemHTML = "";
 
+        //itemHTML += "<div class='item-divider'></div>";
+        itemHTML += "<div class='item-information'>";
+        itemHTML += this.description + "<br>";
+        itemHTML += "</div>";
 
+        itemHTML += "<div class='item-divider'></div>";
 
+        itemHTML += "<div class='item-mods'>";
+        itemHTML += "Quantity: " + this.quantity + "<br>";
+        itemHTML += "</div>";
 
-    //Defines the item base-types, and the properties that are common across
-    //all items of this type
-    //TODO: Sort these into categories (e.g. chest {chest1, chest2, chest3}, etc...)
-
-    var itemTypes = {
-        "head1": {"image": "helm.png", "baseArmour": 5},
-        "chest1": {"image": "temp2.png", "baseArmour": 20},
-        "hands1": {"image": "temp.png", "baseArmour": 5},
-        "legs1": {"image": "temp.png", "baseArmour": 5},
-        "legs2": {"image": "temp2.png", "baseArmour": 10},
-        "legs3": {"image": "temp3.png", "baseArmour": 15},
-        "feet1": {"image": "temp.png", "baseArmour": 5},
-        "ring1": {"image": "temp3.png", "baseArmour": 0},
-        "ring2": {"image": "temp3.png", "baseArmour": 0},
-        "amulet1": {"image": "temp2.png", "baseArmour": 0}
+        return itemHTML;
     };
+
+
+
+
+
+
+
 
     //Item type definitions
 
@@ -876,72 +1092,193 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         //Weapons
         "sword1": {
             "name": "Stone Sword",
+            "id": "sword1",
             "type": constants.item.type.weapon.SWORD,
             "class": constants.item.class.WEAPON,
-            "image": "rune1.png",
+            "slot": constants.item.slot.WEAPON,
+            "image": "sword.png",
             "damageBase": [1, 5],
             "apsBase": 1.2,
             "critBase": 5,
             "implicitMods": [
                 {"mod": constants.item.mod.LAC, "amount": 10}
-            ]
+            ],
+            "modWeights": {
+                "prefixes": [
+                    ["phys_dmg", 20, 1], ["crit_chance", 10, 1], ["strength", 20, 1],
+                    ["agility", 10, 1], ["intelligence", 10, 1], ["all_attributes", 10, 1],
+                    ["mana_regen", 10, 1], ["attack_speed", 10, 1]
+                ],
+                "suffixes": [
+                    ["crit_multiply", 10, 1], ["max_mana", 10, 1], ["mana_regen_rate", 10, 1]
+                ]
+            }
         },
 
         "axe1": {
             "name": "Foraging Axe",
+            "id": "axe1",
             "type": constants.item.type.weapon.AXE,
             "class": constants.item.class.WEAPON,
+            "slot": constants.item.slot.WEAPON,
             "image": "axe.png",
             "damageBase": [1, 3],
             "apsBase": 1.3,
             "critBase": 7,
             "implicitMods": [
                 {"mod": constants.item.mod.CM, "amount": 10}
-            ]
+            ],
+            "modWeights": {
+                "prefixes": [
+                    ["phys_dmg", 10, 1], ["crit_chance", 20, 1], ["strength", 10, 1],
+                    ["agility", 10, 1], ["intelligence", 10, 1], ["all_attributes", 10, 1],
+                    ["mana_regen", 10, 1], ["attack_speed", 10, 1]
+                ],
+                "suffixes": [
+                    ["crit_multiply", 10, 1], ["max_mana", 10, 1], ["mana_regen_rate", 10, 1]
+                ]
+            }
         },
 
         "dagger1": {
             "name": "Skinning Knife",
+            "id": "dagger1",
             "type": constants.item.type.weapon.DAGGER,
             "class": constants.item.class.WEAPON,
+            "slot": constants.item.slot.WEAPON,
             "image": "rune2.png",
             "damageBase": [1, 3],
             "apsBase": 1.5,
             "critBase": 7.5,
             "implicitMods": [
                 {"mod": constants.item.mod.CC, "amount": 10}
-            ]
+            ],
+            "modWeights": {
+                "prefixes": [
+                    ["phys_dmg", 10, 1], ["crit_chance", 20, 1], ["strength", 10, 1],
+                    ["agility", 10, 1], ["intelligence", 10, 1], ["all_attributes", 10, 1],
+                    ["mana_regen", 10, 1], ["attack_speed", 20, 1]
+                ],
+                "suffixes": [
+                    ["crit_multiply", 10, 1], ["max_mana", 10, 1], ["mana_regen_rate", 10, 1]
+                ]
+            }
         },
 
         "staff1": {
             "name": "Wooden Staff",
+            "id": "staff1",
             "type": constants.item.type.weapon.STAFF,
             "class": constants.item.class.WEAPON,
-            "image": "helm.png",
+            "slot": constants.item.slot.WEAPON,
+            "image": "axe.png",
             "damageBase": [1, 7],
             "apsBase": 1,
             "critBase": 4,
             "implicitMods": [
                 {"mod": constants.item.mod.BYA, "amount": 10}
-            ]
+            ],
+            "modWeights": {
+                "prefixes": [
+                    ["phys_dmg", 10, 1], ["crit_chance", 5, 1], ["strength", 10, 1],
+                    ["agility", 10, 1], ["intelligence", 10, 1], ["all_attributes", 10, 1],
+                    ["mana_regen", 10, 1], ["attack_speed", 10, 1]
+                ],
+                "suffixes": [
+                    ["crit_multiply", 20, 1], ["max_mana", 10, 1], ["mana_regen_rate", 10, 1]
+                ]
+            }
         },
 
         "bow1": {
             "name": "Cedar Bow",
+            "id": "bow1",
             "type": constants.item.type.weapon.BOW,
             "class": constants.item.class.WEAPON,
-            "image": "helm.png",
+            "slot": constants.item.slot.WEAPON,
+            "image": "rune1.png",
             "damageBase": [1, 5],
             "apsBase": 1.4,
             "critBase": 6.5,
             "implicitMods": [
                 {"mod": constants.item.mod.MS, "amount": 10}
-            ]
+            ],
+            "modWeights": {
+                "prefixes": [
+                    ["phys_dmg", 10, 1], ["crit_chance", 20, 1], ["strength", 10, 1],
+                    ["agility", 10, 1], ["intelligence", 10, 1], ["all_attributes", 10, 1],
+                    ["mana_regen", 10, 1], ["attack_speed", 20, 1]
+                ],
+                "suffixes": [
+                    ["crit_multiply", 10, 1], ["max_mana", 10, 1], ["mana_regen_rate", 10, 1]
+                ]
+            }
         },
 
         //Armour
-        "chest1": {"name": "Leather Hide", "class": constants.item.class.ARMOUR, "image": "helm.png"},
-        "head1": {"name": "Leather Cap", "class": constants.item.class.ARMOUR, "image": "helm.png"}
+        "chest1": {
+            "name": "Leather Hide",
+            "id": "chest1",
+            "type": constants.item.type.armour.CHEST,
+            "class": constants.item.class.ARMOUR,
+            "slot": constants.item.slot.CHEST,
+            "image": "armour.png",
+            "modWeights": {
+                "prefixes": [
+                    ["phys_dmg", 10, 1], ["crit_chance", 10, 1], ["strength", 10, 1],
+                    ["agility", 10, 1], ["intelligence", 10, 1], ["all_attributes", 10, 1],
+                    ["mana_regen", 10, 1], ["attack_speed", 10, 1]
+                ],
+                "suffixes": [
+                    ["crit_multiply", 10, 1], ["max_mana", 10, 1], ["mana_regen_rate", 10, 1]
+                ]
+            }
+        },
+
+        "head1": {
+            "name": "Leather Cap",
+            "id": "head1",
+            "type": constants.item.type.armour.HEAD,
+            "class": constants.item.class.ARMOUR,
+            "slot": constants.item.slot.HEAD,
+            "image": "helm.png",
+            "modWeights": {
+                "prefixes": [
+                    ["phys_dmg", 10, 1], ["crit_chance", 10, 1], ["strength", 10, 1],
+                    ["agility", 10, 1], ["intelligence", 10, 1], ["all_attributes", 10, 1],
+                    ["mana_regen", 10, 1], ["attack_speed", 10, 1]
+                ],
+                "suffixes": [
+                    ["crit_multiply", 10, 1], ["max_mana", 10, 1], ["mana_regen_rate", 10, 1]
+                ]
+            }
+        }
+    };
+
+    var tradeGoods1 = {
+        "boarhide": {
+            "name": "Boar Hide",
+            "id": "boarhide",
+            "description": "Tough boar hide",
+            "stackSize": 5,
+            "type": null,
+            "class": constants.item.class.TRADEGOOD,
+            "slot": null,
+            "image": "temp.png",
+            "modWeights": null
+        },
+
+        "crackedbones": {
+            "name": "Cracked Bones",
+            "id": "crackedbones",
+            "description": "Cracked bone fragments",
+            "stackSize": 10,
+            "type": null,
+            "class": constants.item.class.TRADEGOOD,
+            "slot": null,
+            "image": "temp2.png",
+            "modWeights": null
+        }
     };
 
     //Treasure Classes
@@ -969,40 +1306,75 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
                     [itemTypes1.staff1, 10],
                     [itemTypes1.bow1, 10],
                     [itemTypes1.chest1, 7],
-                    [itemTypes1.head1, 7]
+                    [itemTypes1.head1, 7],
+                ]
+            }
+        },
+
+        goods1: {
+            "level": 1,
+            "drops": 1,
+            "rarity": {
+                "none": 0,
+                "list": [
+                    ["normal", 50],
+                    ["magic", 30],
+                    ["rare", 10],
+                    ["set", 2],
+                    ["mystical", 1]
+                ]
+            },
+            "items": {
+                "none": 0,
+                "list": [
+                    ["tc1", 10],
+                    [itemTypes1.sword1, 1],
+                ]
+            }
+        },
+
+        boar1: {
+            "level": 1,
+            "drops": 1,
+            "rarity": {
+                "none": 0,
+                "list": [
+                    ["normal", 50],
+                    ["magic", 30],
+                    ["rare", 10],
+                    ["set", 2],
+                    ["mystical", 1]
+                ]
+            },
+            "items": {
+                "none": 0,
+                "list": [
+                    [tradeGoods1.boarhide, 10]
+                ]
+            }
+        },
+
+        skeleton1: {
+            "level": 1,
+            "drops": 1,
+            "rarity": {
+                "none": 0,
+                "list": [
+                    ["normal", 50],
+                    ["magic", 30],
+                    ["rare", 10],
+                    ["set", 2],
+                    ["mystical", 1]
+                ]
+            },
+            "items": {
+                "none": 0,
+                "list": [
+                    [tradeGoods1.crackedbones, 10]
                 ]
             }
         }
-    };
 
-    //Prefixes
-    var prefix1 = {
-        "dmg1": {"level": 1, "min": [1, 2], "max": [3, 5], "text": "Heavy"},
-        "cc1": {"level": 1, "min": [1, 2], "max": [5, 10], "text": "Sharp"},
-        "str1": {"level": 1, "min": [1, 3], "max": [4, 5], "text": "Brawler's"},
-        "agi1": {"level": 1, "min": [1, 3], "max": [4, 5], "text": "Tracker's"},
-        "int1": {"level": 1, "min": [1, 3], "max": [4, 5], "text": "Student's"},
-        "all1": {"level": 1, "min": [1, 2], "max": [3, 5], "text": "Journeyman's"},
-        "manaregen1": {"level": 1, "min": [1, 2], "max": [3, 4], "text": "Trickling"}
-    };
-
-    //Suffixes
-    var suffix1 = {
-        "cm1": {"level": 1, "min": [1, 5], "max": [6, 10], "text": "of Fury"},
-        "maxmana1": {"level": 1, "min": [1, 5], "max": [6, 10], "text": "from the Stream"},
-        "manatick1": {"level": 1, "min": [1, 2], "max": [3, 4], "text": "of Quickening"}
-    };
-
-    //Contains all of the items that are currently equipped on the main hero
-    $scope.heroItems = {
-        "head": {"type": 0, "image": "helm.png", "baseArmour": 5, "sockets": 1, "rarity": "mystical"},
-        "chest": {"type": 0, "image": "temp.png", "baseArmour": 5, "sockets": 3, "rarity": "set"},
-        "hands": {"type": 0, "image": "temp2.png", "baseArmour": 5, "sockets": 2, "rarity": "magic"},
-        "legs": {"type": 0, "image": "temp3.png", "baseArmour": 5, "sockets": 4, "rarity": "normal"},
-        "feet": {"type": 0, "image": "temp.png", "baseArmour": 5, "sockets": 1, "rarity": "normal"},
-        "ringLeft": {"type": 0, "image": "temp2.png", "baseArmour": 5, "sockets": 0, "rarity": "magic"},
-        "ringRight": {"type": 0, "image": "temp3.png", "baseArmour": 5, "sockets": 0, "rarity": "rare"},
-        "amulet": {"type": 0, "image": "temp.png", "baseArmour": 5, "sockets": 0, "rarity": "mystical"}
     };
 
     //TODO: Swap two items
@@ -1021,6 +1393,256 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         "R5": {p1: 1, p2: 2, p3: 3}
     };
 
+    var affixes = {
+        "prefixes": {
+            getWeights: function() {
+                var weights = {
+                    "none": 0,
+                    "list": []
+                };
+                return weights;
+            },
+            "affixes": {
+                "phys_dmg": {
+                    "id": "PhysicalDamage",
+                    "dmg1": {"level": 1, generate: function() {return new PhysicalDamage(1, [1, 2], [3, 5], "Heavy");}},
+                    "dmg2": {"level": 2, generate: function() {return new PhysicalDamage(2, [4, 5], [6, 8], "Very Heavy");}}
+                },
+                "crit_chance": {
+                    "id": "CriticalChance",
+                    "cc1": {"level": 1, generate: function() {return new CriticalChance(1, [1, 2], "Sharp");}},
+                    "cc2": {"level": 2, generate: function() {return new CriticalChance(2, [3, 4], "Very Sharp");}}
+                },
+                "strength": {
+                    "id": "Strength",
+                    "str1": {"level": 1, generate: function() {return new Strength(1, [1, 2], "Brawler's");}},
+                    "str2": {"level": 2, generate: function() {return new Strength(2, [3, 4], "Warrior's");}}
+                },
+                "agility": {
+                    "id": "Agility",
+                    "agi1": {"level": 1, generate: function() {return new Agility(1, [1, 2], "Tracker's");}},
+                    "agi2": {"level": 2, generate: function() {return new Agility(2, [3, 4], "Acrobat's");}}
+                },
+                "intelligence": {
+                    "id": "Intelligence",
+                    "int1": {"level": 1, generate: function() {return new Intelligence(1, [1, 2], "Student's");}},
+                    "int2": {"level": 2, generate: function() {return new Intelligence(2, [3, 4], "Professor's");}}
+                },
+                "all_attributes": {
+                    "id": "AllAttributes",
+                    "all1": {"level": 1, generate: function() {return new AllAttributes(1, [1, 3], "Journeyman's");}},
+                    "all2": {"level": 2, generate: function() {return new AllAttributes(2, [4, 5], "Wanderer's");}}
+                },
+                "mana_regen": {
+                    "id": "ManaRegeneration",
+                    "mr1": {"level": 1, generate: function() {return new ManaRegeneration(1, [1, 3], "Trickling");}},
+                    "mr2": {"level": 2, generate: function() {return new ManaRegeneration(2, [4, 5], "Flowing");}}
+                },
+                "attack_speed": {
+                    "id": "AttackSpeed",
+                    "as1": {"level": 1, generate: function() {return new AttackSpeed(1, [1, 5], "Rabbit's");}},
+                    "as2": {"level": 2, generate: function() {return new AttackSpeed(2, [6, 10], "Cheetah's");}}
+                }
+            }
+        },
+
+        "suffixes": {
+            getWeights: function() {
+                var weights = {
+                    "none": 0,
+                    "list": []
+                };
+                return weights;
+            },
+            "affixes": {
+                "crit_multiply": {
+                    "id": "CriticalMultiplier",
+                    "cm1": {"level": 1, generate: function() {return new CriticalMultiplier(1, [1, 2], "of Fury");}},
+                    "cm2": {"level": 2, generate: function() {return new CriticalMultiplier(2, [3, 5], "of Whirling Fury");}}
+                },
+                "max_mana": {
+                    "id": "MaximumMana",
+                    "maxmana1": {"level": 1, generate: function() {return new MaximumMana(1, [1, 2], "from the Stream");}},
+                    "maxmana2": {"level": 2, generate: function() {return new MaximumMana(2, [3, 5], "from the River");}}
+                },
+                "mana_regen_rate": {
+                    "id": "ManaRegenerationRate",
+                    "mrr1": {"level": 1, generate: function() {return new ManaRegenerationRate(1, [1, 2], "of Quickening");}},
+                    "mrr2": {"level": 2, generate: function() {return new ManaRegenerationRate(2, [3, 5], "of Swiftness");}}
+                }
+            }
+        }
+    };
+
+    /* Affix Class */
+    function Affix() {
+        //An affix is any modifier that can be found on an item
+    }
+
+    /* Prefix Class */
+    function Prefix() {
+        //A prefix is any modifier that can be found on an item
+        Affix.call(this);
+    }
+
+    Prefix.prototype = Object.create(Affix.prototype);
+    Prefix.prototype.constructor = Prefix;
+
+    /* Suffix Class */
+    function Suffix() {
+        //A suffix is any modifier that can be found on an item
+        Affix.call(this);
+    }
+
+    Suffix.prototype = Object.create(Affix.prototype);
+    Suffix.prototype.constructor = Suffix;
+
+    /* Physical Damage Class */
+    function PhysicalDamage(level, min, max, text) {
+        //Physical damage is damage which does not have any status effects
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.min = _.random(min[0], min[1]);
+        this.max = _.random(max[0], max[1]);
+        this.displayText = this.min + " - " + this.max + " Physical Damage";
+    }
+
+    PhysicalDamage.prototype = Object.create(Prefix.prototype);
+    PhysicalDamage.prototype.constructor = PhysicalDamage;
+
+    /* Critical Chance Class */
+    function CriticalChance(level, amount, text) {
+        //Critical chance is the chance to deal an amount of damage which is multiplied by the critical multiplier
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + "% Critical Chance";
+    }
+
+    CriticalChance.prototype = Object.create(Prefix.prototype);
+    CriticalChance.prototype.constructor = CriticalChance;
+
+    /* Strength Class */
+    function Strength(level, amount, text) {
+        //Strength is the affix which increases the physical damage done by the hero
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " Strength";
+    }
+
+    Strength.prototype = Object.create(Prefix.prototype);
+    Strength.prototype.constructor = Strength;
+
+    /* Agility Class */
+    function Agility(level, amount, text) {
+        //Agility is the affix which increases the speed at which the hero can attack
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " Agility";
+    }
+
+    Agility.prototype = Object.create(Prefix.prototype);
+    Agility.prototype.constructor = Agility;
+
+    /* Intelligence Class */
+    function Intelligence(level, amount, text) {
+        //Intelligence is the affix which increases the hero's magic damage
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " Intelligence";
+    }
+
+    Intelligence.prototype = Object.create(Prefix.prototype);
+    Intelligence.prototype.constructor = Intelligence;
+
+    /* All Attributes Class */
+    function AllAttributes(level, amount, text) {
+        //All attributes is the affix which increases the hero's strength, agility and intelligence
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " to All Attributes";
+    }
+
+    AllAttributes.prototype = Object.create(Prefix.prototype);
+    AllAttributes.prototype.constructor = AllAttributes;
+
+    /* Mana Regeneration Class */
+    function ManaRegeneration(level, amount, text) {
+        //Mana regeneration is the affix which increases the amount of mana that the hero regenerates
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " Mana Regeneration";
+    }
+
+    ManaRegeneration.prototype = Object.create(Prefix.prototype);
+    ManaRegeneration.prototype.constructor = ManaRegeneration;
+
+    /* Attack Speed Class */
+    function AttackSpeed(level, amount, text) {
+        //Attack speed is the affix which affects how fast a hero can attack
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + "% Faster Attack Speed";
+    }
+
+    AttackSpeed.prototype = Object.create(Prefix.prototype);
+    AttackSpeed.prototype.constructor = AttackSpeed;
+
+
+
+    /* Critical Multiplier Class */
+    function CriticalMultiplier(level, amount, text) {
+        //Critical multiplier is the multiplier for any damage which is dealt from a critical hit
+        Suffix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + "% Critical Multiplier";
+    }
+
+    CriticalMultiplier.prototype = Object.create(Suffix.prototype);
+    CriticalMultiplier.prototype.constructor = CriticalMultiplier;
+
+    /* Maximum Mana Class */
+    function MaximumMana(level, amount, text) {
+        //Maximum mana adds to the hero's total mana pool
+        Suffix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " to Maximum Mana";
+    }
+
+    MaximumMana.prototype = Object.create(Suffix.prototype);
+    MaximumMana.prototype.constructor = MaximumMana;
+
+    /* Mana Regeneration Rate Class */
+    function ManaRegenerationRate(level, amount, text) {
+        //Mana regeneration rate is the affix which decreases the amount of time that it takes for the hero to regenerate mana
+        Suffix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " Mana Regeneration Rate";
+    }
+
+    ManaRegenerationRate.prototype = Object.create(Suffix.prototype);
+    ManaRegenerationRate.prototype.constructor = ManaRegenerationRate;
+
     /*
 
     Drop Process:
@@ -1037,48 +1659,202 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
 
     */
 
-    function dropItems(treasureClass, source) {
-        var items = [];
+    function removeItemFromInventory(item) {
 
-        var drops = treasureClass.drops;
-        var dropSum = weightSum(treasureClass.items);
+        var source = $scope.hero.inventory;
+        var findItems = null;
+        var searchResultsList = null;
+        var searchResults = null;
 
-        //Get the base item type, and determine which quality to upgrade the item to
-        for (var i = 1; i <= drops; i++) {
-            var item = null;
-            var rarity = null;
+        if (_.has(item, "name")) {
+            //Case 1: item has not been converted into an Item object yet
+            findItems = _.where(source, {"id": item.id});
+            searchResultsList = _.sortBy(findItems, function(entry) {return entry.quantity;});
+            searchResults = searchResultsList[0];
+        } else {
+            //Case 2: item has been converted into an Item object
+            $scope.hero.inventory = _.without($scope.hero.inventory, _.findWhere($scope.hero.inventory, item));
+            console.log($scope.hero.inventory);
+            return;
+        }
 
-            //Get the base item type
-            item = {};
-            var newItem = selectFromWeights(treasureClass.items);
+        if (_.has(searchResults, "quantity")) {
+            searchResults.quantity -= 1;
+            if (searchResults.quantity <= 0) {
+                $scope.hero.inventory = _.without(source, _.findWhere(source, searchResults));
+            }
+        } else {
+            $scope.hero.inventory = _.without(source, _.findWhere(source, item));
+        }
+    }
 
-            //Select the quality
-            if (newItem !== null) {
-                jQuery.extend(item, newItem);
-                rarity = selectFromWeights(treasureClass.rarity);
-                item.rarity = rarity;
-                item.sockets = 0;
-                item.id = getUniqueID();
-                $scope.hero.inventory.push(item);
+    //Return the first item that matches the item name and does not have a full stack
+    function searchForPartialStack(source, item) {
+        if (_.has(item, "quantity")) {
+            //TODO: change the search parameter from the item name to an item ID or other unique identifier
+            return _.find(source, function(entry) {
+                return ((entry.itemName === item.itemName) && (entry.quantity < item.stackSize));
+            });
+        } else {
+            return undefined;
+        }
+    }
+
+    function giveItem(items, to) {
+        console.log("ITEMS", items);
+        for (var item in items) {
+            var searchResult = searchForPartialStack(to, items[item]);
+
+            if (searchResult !== undefined) {
+                searchResult.quantity += 1;
             } else {
-                continue;
+                to.push(items[item]);
+            }
+        }
+        updateQuestObjectives(constants.quest.type.ACQUIRE, null);
+    }
+
+    function dropItems(treasureClasses, source) {
+        var items = [];
+        var treasureClassList = [];
+
+        if (treasureClasses.length === undefined) {
+            treasureClassList.push(treasureClasses);
+        } else {
+            treasureClassList = treasureClasses;
+        }
+
+        _.each(treasureClassList, function(treasureClass) {
+
+            var drops = treasureClass.drops;
+
+            //Get the base item type, and determine which rarity to upgrade the item to
+            for (var i = 1; i <= drops; i++) {
+                var item = null;
+                var rarity = null;
+
+                //Choose a random base item type to drop
+                var newItem = getItem(treasureClass);
+
+                if (newItem !== null) {
+                    //Figure out which item type to generate, based on the base item type
+                    switch(newItem.class) {
+                        case constants.item.class.WEAPON:
+                            item = new Weapon(newItem);
+                            break;
+
+                        case constants.item.class.ARMOUR:
+                            item = new Armour(newItem);
+                            break;
+
+                        case constants.item.class.TRADEGOOD:
+                            item = new TradeGood(newItem);
+                            items.push(item);
+                            continue;
+                    }
+
+                    //Select the rarity
+                    rarity = selectFromWeights(treasureClass.rarity);
+                    item.setRarity(rarity);
+
+                    //Figure out whether to choose a preset drop (i.e., a mystical or set item), or simply generate random affixes
+                    if (rarity === constants.item.rarity.SET || rarity === constants.item.rarity.MYSTICAL) {
+                        //Find a preset item with the specified item type and rarity - if none exists, then drop a rare item of the same base type (if possible)
+                        //TODO: Create a preset-item data set with which to consult
+                        //DEBUG for now - the name will either be determined from a preset item, or dynamically based on the affixes that are generated
+                        item.setItemName(newItem.name);
+                    } else {
+                        //Set the item affixes
+                        //1. Generate a random number which represents the number of affixes to select, based on the item rarity and the current floor level
+                        var affixCount = 0;
+                        switch(rarity) {
+                            case constants.item.rarity.NORMAL:
+                                affixCount = 1;
+                                break;
+                            case constants.item.rarity.MAGIC:
+                                affixCount = _.random(1, 2); //TODO: Factor in the floor here
+                                break;
+                            case constants.item.rarity.RARE:
+                                affixCount = _.random(3, 6); //TODO: Factor in the floor here
+                                break;
+                        }
+                        //2. Determine whether or not the affixes will be prefixes or suffixes (or both)
+                        //3. Select the affixes which will be used, making sure not to select affixes that belong to the same group more than once (perhaps by selecting the groups first)
+                        //4. Affix groups can potentially have different weights, and floor thresholds that only allow the group to be selected after a certain floor
+                        //5. The affixes within these groups will work the same way as in step 4
+                        var affixes = [];
+
+                        for (var index = 0; index < affixCount; index++) {
+                            affixes.push(affixGetter(newItem.modWeights, affixes));
+                        }
+
+                        console.log("Affixes = ", affixes);
+                        item.addAffixes(affixes);
+                        //DEBUG for now - the name will either be determined from a preset item, or dynamically based on the affixes that are generated
+                        var prefix = "";
+                        var suffix = "";
+                        for (var affix in affixes) {
+                            if (affixes[affix] instanceof Prefix) {
+                                prefix = affixes[affix].text + " ";
+                            } else {
+                                suffix = " " + affixes[affix].text;
+                            }
+                        }
+                        item.setItemName(prefix + newItem.name + suffix);
+
+                    }
+
+                    //item.sockets = 0;
+                    //item.id = getUniqueID();
+                    items.push(item);
+                } else {
+                    //No drop
+                    continue;
+                }
+
+                console.log(i, item);
+            }
+        });
+
+        //Define the affix getter
+        function affixGetter(itemAffixList, affixes) {
+            //Choose a suffix or prefix
+            var affixSectionsCount = _.countBy(affixes, function(a) {return Object.getPrototypeOf(Object.getPrototypeOf(a).constructor.prototype).constructor.name == "Prefix" ? "Prefixes": "Suffixes";});
+            var affixSection = null;
+            if (affixSectionsCount.Suffixes >= 3) {
+                affixSection = "prefixes";
+            } else if (affixSectionsCount.Prefixes >= 3) {
+                affixSection = "suffixes";
+            } else {
+                affixSection = _.sample(["prefixes", "suffixes"], 1)[0];
             }
 
-            //Figure out whether to choose a preset drop (i.e., a mystical or set item), or simply generate random affixes
+            //Do the pre-filtering
+            var floor = gameFloors.currentFloor.index;
+            var validAffixGroups = preFilterAffixGroups(floor, affixSection, itemAffixList, affixes);
 
-            //Set the item affixes
+            //Select an affix group from the filtered affix groups
+            var affixGroupSelection = selectFromWeights(validAffixGroups);
 
+            //Select an affix from the selected group
+            var affix = selectAffixFromGroup(floor, affixGroupSelection);
 
-            console.log(i, item);
-
-
-
+            return affix.generate();
 
         }
 
-        console.log($scope.hero.inventory);
+        function getItem(tc) {
+            var item = selectFromWeights(tc.items);
+            if (item === null) {
+                return null;
+            } else {
+                if (typeof item === "string") {
+                    item = getItem(treasureClasses[item]);
+                }
+            }
 
-        //console.log(dropSum);
+            return item;
+        }
 
         return items;
     }
@@ -1128,6 +1904,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         }
         */
 
+        //Note: The weightList indices need to be in ascending order for this to work correctly
         for (var index in weightList) {
             if (randomNumber <= weightList[index][1]) {
                 return weightList[index][0];
@@ -1137,6 +1914,49 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         //The function should return before this point
         return undefined;
 
+    }
+
+    //Get only the affix groups that can drop at the current floor or lower
+    function preFilterAffixGroups(floor, affixSection, itemAffixList, currentAffixes) {
+        //Inject the item affix list from the item into the affix table
+        var affixWeights = {
+            "none": 0,
+            "list": []
+        };
+
+        _.each(affixes[affixSection]["affixes"], function(value, key) {
+            affixWeights.list.push([
+                value,
+                _.find(itemAffixList[affixSection], function(entry) {return entry[0] == key;})[1],
+                _.find(itemAffixList[affixSection], function(entry) {return entry[0] == key;})[2],
+            ]);
+        });
+
+        var returnAffixGroups = {
+            "none": affixWeights.none,
+            "list": []
+        };
+
+        //Populate a list of the existing affix names
+        currentAffixNames = [];
+        _.each(currentAffixes, function(affix) {currentAffixNames.push(Object.getPrototypeOf(affix).constructor.name);});
+
+        var filteredAffixLevels = _.filter(affixWeights.list, function(entry) {return (entry[2] <= floor);});
+
+        returnAffixGroups.list = _.filter(filteredAffixLevels, function(a) {
+                return (_.contains(currentAffixNames, a[0].id) === false);
+        });
+
+        return returnAffixGroups;
+    }
+
+    //Select an affix
+    function selectAffixFromGroup(floor, affixes) {
+        returnAffixes = _.filter(affixes, function(entry) {return ((entry.level <= floor) && (typeof(entry) === "object"));});
+
+        affix = returnAffixes[_.random(0, returnAffixes.length - 1)];
+
+        return affix;
     }
 
 
@@ -1172,7 +1992,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
                     "baseDamageMax": 10,
                     "baseAPS": 1,
                     "abilities": [],
-                    "treasureClass": treasureClasses.tc1
+                    "treasureClass": [treasureClasses.boar1, treasureClasses.tc1]
                 },
         "wolf": {
                     "name": "Wolf",
@@ -1205,7 +2025,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
                     "baseDamageMax": 15,
                     "baseAPS": 1,
                     "abilities": [],
-                    "treasureClass": treasureClasses.tc1
+                    "treasureClass": [treasureClasses.tc1, treasureClasses.skeleton1]
                 },
         "skeletalDefender": {
                     "name": "Skeletal Defender",
@@ -1216,7 +2036,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
                     "baseDamageMax": 10,
                     "baseAPS": 1,
                     "abilities": [abilities.giveArmourLR],
-                    "treasureClass": treasureClasses.tc1
+                    "treasureClass": [treasureClasses.tc1, treasureClasses.skeleton1]
                 },
         "gargoyle": {
                     "name": "Gargoyle",
@@ -1412,6 +2232,9 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
                                 $scope.hero.target = null;
                                 $scope.enemyBoard.board = _.without($scope.enemyBoard.board, _.findWhere($scope.enemyBoard.board, this));
 
+                                var items = dropItems(this.enemy.treasureClass, this);
+                                giveItem(items, $scope.hero.inventory);
+
                                 updateQuestObjectives(constants.quest.type.DEFEAT, this.enemy);
 
                                 $scope.enemyBoard.update();
@@ -1465,10 +2288,11 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
     var quests = {
         "level1": {
             "boar1": {
-                        "name": "A Witty Quest Title",
+                        "name": "Boars Boars Boars!",
                         "description": "The boars are invading! Defeat as many as possible!",
                         "objectives": [
-                                        {"type": constants.quest.type.DEFEAT, "target": enemyDefinitions.boar, "amount": 10, "currentAmount": 0, "status": constants.quest.status.INCOMPLETE}
+                                        {"type": constants.quest.type.DEFEAT, "target": enemyDefinitions.boar, "amount": 10, "currentAmount": 0, "status": constants.quest.status.INCOMPLETE},
+                                        {"type": constants.quest.type.ACQUIRE, "target": tradeGoods1.boarhide, "amount": 3, "currentAmount": 0, "status": constants.quest.status.INCOMPLETE}
                                     ],
                         "rewards": {"experience": 100, "gold": 25, "items": null},
                         "status": constants.quest.status.INCOMPLETE
@@ -1478,7 +2302,8 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
                         "description": "The skeletons are invading! Defeat as many as possible!",
                         "objectives": [
                                         {"type": constants.quest.type.DEFEAT, "target": enemyDefinitions.skeleton, "amount": 1, "currentAmount": 0, "status": constants.quest.status.INCOMPLETE},
-                                        {"type": constants.quest.type.DEFEAT, "target": enemyDefinitions.skeletalDefender, "amount": 2, "currentAmount": 0, "status": constants.quest.status.INCOMPLETE}
+                                        {"type": constants.quest.type.DEFEAT, "target": enemyDefinitions.skeletalDefender, "amount": 2, "currentAmount": 0, "status": constants.quest.status.INCOMPLETE},
+                                        {"type": constants.quest.type.ACQUIRE, "target": tradeGoods1.crackedbones, "amount": 5, "currentAmount": 0, "status": constants.quest.status.INCOMPLETE}
                                     ],
                         "rewards": {"experience": 100, "gold": 25, "items": null},
                         "status": constants.quest.status.INCOMPLETE
@@ -1514,8 +2339,28 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
                         break;
 
                     //Quest type: acquire
-                    case "acquire":
-                        console.log("TODO");
+                    case constants.quest.type.ACQUIRE:
+                        var searchResult = null;
+                        if ((objective.type === constants.quest.type.ACQUIRE)) {
+                            searchResult = _.where($scope.hero.inventory, {"id": objective.target.id});
+                            var quantities = _.map(searchResult, function(entry) {
+                                if (_.has(entry, "quantity")) {
+                                    return entry.quantity;
+                                } else {
+                                    return 1;
+                                }
+                            });
+
+                            objective.currentAmount = _.reduce(quantities, function(a, b) {return a + b;}, 0);
+                            
+                            if (objective.currentAmount > objective.amount) {
+                                objective.currentAmount = objective.amount;
+                            }
+
+                            if (objective.currentAmount == objective.amount) {
+                                objective.status = constants.quest.status.COMPLETE;
+                            }
+                        }
                         break;
                 }
 
@@ -1539,6 +2384,16 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
     //Complete a quest
     function completeQuest(quest) {
         //TODO - give the rewards to the player
+
+        _.each(quest.objectives, function(objective) {
+            switch(objective.type) {
+                case constants.quest.type.ACQUIRE:
+                    for (var i = 0; i < 5; i++) {
+                        removeItemFromInventory(objective.target);
+                    }
+            }
+        });
+
         $scope.hero.questLog = _.without($scope.hero.questLog, _.findWhere($scope.hero.questLog, quest));
     }
 
@@ -1673,63 +2528,60 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
     var timerArrayCount = 0;
 
     //This timer is used for any action that needs to occur on a 1 second timer
-    $scope.oneSecondTimer = function() {
-        $timeout(function() {
-            $scope.increment(1);
-            $scope.checkUnlocks();
-            $scope.oneSecondTimer();
+    var oneSecondTimer = function() {
+        $scope.increment(1);
+        $scope.checkUnlocks();
 
-            //$scope.timerPerformance = new Date().getTime() - scheduled;
+        //$scope.timerPerformance = new Date().getTime() - scheduled;
 
-            //Increment all timer counter variables
-            for (var stat in timerCounters) {
-                timerCounters[stat] = timerCounters[stat] + 1;
-            }
+        //Increment all timer counter variables
+        for (var stat in timerCounters) {
+            timerCounters[stat] = timerCounters[stat] + 1;
+        }
 
-            //Mana per second
-            if (timerCounters.manaPerTick >= $scope.hero.stats.manaTickRate) {
-                timerCounters.manaPerTick = 0;
-                if ($scope.hero.stats.mana < $scope.hero.stats.manaMax) {
-                    if (($scope.hero.stats.mana + $scope.hero.stats.manaPerTick) < $scope.hero.stats.manaMax) {
-                        $scope.hero.stats.mana = $scope.hero.stats.mana + $scope.hero.stats.manaPerTick;
-                    } else {
-                        $scope.hero.stats.mana = $scope.hero.stats.manaMax;
-                    }
+        //Mana per second
+        if (timerCounters.manaPerTick >= $scope.hero.stats.manaTickRate) {
+            timerCounters.manaPerTick = 0;
+            if ($scope.hero.stats.mana < $scope.hero.stats.manaMax) {
+                if (($scope.hero.stats.mana + $scope.hero.stats.manaPerTick) < $scope.hero.stats.manaMax) {
+                    $scope.hero.stats.mana = $scope.hero.stats.mana + $scope.hero.stats.manaPerTick;
+                } else {
+                    $scope.hero.stats.mana = $scope.hero.stats.manaMax;
                 }
             }
-            //scheduled = new Date().getTime() + 1000;
-        }, 1000);
+        }
+        $scope.$apply();
     };
 
     //This timer is used to increment the action progress bar, and ties in with the hero's APS
-    $scope.actionTimer = function() {
-        $timeout(function() {
-            if (timerArrayCount > 99) {
-                timerArrayCount = 0;
+    var actionTimer = function() {
+        if (timerArrayCount > 99) {
+            timerArrayCount = 0;
+        }
+        $scope.timerArray[timerArrayCount] = new Date().getTime() - scheduled;
+        timerArrayCount = timerArrayCount + 1;
+
+        if ($scope.hero.inCombat === true) {
+            game.actionTimerCount += 10;
+
+            if (game.actionTimerCount >= getAttackTime()) {
+                $scope.hero.target.hit(null);
+                game.actionTimerCount = 0;
             }
-            $scope.timerArray[timerArrayCount] = new Date().getTime() - scheduled;
-            timerArrayCount = timerArrayCount + 1;
 
-            if ($scope.hero.inCombat === true) {
-                game.actionTimerCount += 10;
-
-                if (game.actionTimerCount >= getAttackTime()) {
-                    $scope.hero.target.hit(null);
-                    game.actionTimerCount = 0;
-                }
-
-            }
-            scheduled = new Date().getTime() + 10;
-            $scope.actionTimer();
-        }, 10);
+        }
+        scheduled = new Date().getTime() + 10;
+        $scope.$apply();
     };
 
     //Start
-    $scope.oneSecondTimer();
-    $scope.actionTimer();
+    //$scope.oneSecondTimer();
+    //$scope.actionTimer();
     //spawnEnemy();
     //spawnEnemy();
     //spawnEnemy();
+
+    WorkerService.sendMessage("start", actionTimer, oneSecondTimer);
 
 
 
@@ -1926,9 +2778,119 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
             }
         },
 
-        swapItems: function(item) {
-            var temp = item;
-            $scope.heroItems.head.rarity = "set";
+        swapItems: function() {
+
+            //Inventory -> Equip
+            if ((this.itemSource.currentSlot === "inventory") && (this.itemTarget.currentSlot !== "inventory")) {
+                var itemIndex = _.indexOf($scope.hero.inventory, this.itemSource.data);
+                var temp = this.itemTarget;
+
+                //No equipped item
+                if (temp.data === null) {
+                    console.log("!!!!!");
+                    this.equipItem(this.itemSource.data);
+                    removeItemFromInventory(this.itemSource.data);
+                }
+
+                $scope.hero.inventory[itemIndex] = this.itemTarget.data;
+                this.itemSource = temp;
+                return;
+            }
+
+            //Inventory -> Inventory
+            if (a) {
+                return;
+            }
+
+            //Equip -> Equip
+            if (b) {
+                return;
+            }
+
+            //Equip -> Inventory
+            if (c) {
+                return;
+            }
+
+            /*
+            var itemIndex = _.indexOf($scope.hero.inventory, this.itemSource.data);
+            var temp = null;
+
+            if ((itemIndex === -1) && (this.itemTarget.data === null)) {
+                this.unequipItem(this.itemSource.data.itemSlot);
+                //$scope.hero.inventory.push(this.itemSource.data);
+                console.log("CS", this.itemSource.currentSlot, $scope.hero.equipment[this.itemSource.currentSlot]);
+                $scope.hero.equipment[this.itemSource.currentSlot] = null;
+                console.log("POST", $scope.hero.equipment[this.itemSource.currentSlot]);
+            }
+
+            if ((this.itemTarget.data === null) && (this.itemTarget.currentSlot !== "inventory")) {
+                if (this.itemSource.data.itemSlot === this.itemTarget.currentSlot) {
+                    temp = $scope.hero.equipment[this.itemSource.data.itemSlot];
+                    if (temp === undefined) {
+                        return false;
+                    }
+                    this.unequipItem(this.itemSource.data.itemSlot);
+                    this.equipItem(this.itemSource.data);
+                    if (temp !== null) {
+                        $scope.hero.inventory[itemIndex] = temp;
+                    } else {
+                        $scope.hero.inventory = _.without($scope.hero.inventory, _.findWhere($scope.hero.inventory, $scope.hero.inventory[itemIndex]));
+                    }
+                    return true;
+                }
+            }
+
+            console.log(this.itemSource.currentSlot, this.itemTarget.currentSlot);
+            temp = this.itemTarget.data;
+            console.log("SOURCE = ", temp);
+            switch(this.itemTarget.currentSlot) {
+                case this.itemSource.data.itemSlot:
+                    if (this.itemSource.currentSlot === "inventory") {
+                        if (this.itemSource.data.itemSlot === this.itemTarget.data.itemSlot) {
+                            this.unequipItem(this.itemSource.data.itemSlot);
+                            this.equipItem(this.itemSource.data);
+                            $scope.hero.inventory[itemIndex] = temp;
+                            console.log(temp);
+                        }
+                    }
+                    break;
+
+                case "inventory":
+                    if (this.itemSource.currentSlot === "inventory") {
+                        var itemIndexSource = _.indexOf($scope.hero.inventory, this.itemSource.data);
+                        var itemIndexTarget = _.indexOf($scope.hero.inventory, this.itemTarget.data);
+
+                        $scope.hero.inventory[itemIndexTarget] = this.itemSource.data;
+                        $scope.hero.inventory[itemIndexSource] = temp;
+                        console.log(temp);
+                    }
+                    break;
+            }
+            */
+        },
+
+        "itemSource": {"data": null, "currentSlot": null},
+
+        "itemTarget": {"data": null, "currentSlot": null},
+
+        setItemSource: function(source, slot) {
+            this.itemSource.data = source;
+            this.itemSource.currentSlot = slot;
+        },
+
+        setItemTarget: function(target, slot) {
+            this.itemTarget.data = target;
+            this.itemTarget.currentSlot = slot;
+        },
+
+        unequipItem: function(type) {
+            //TODO
+        },
+
+        equipItem: function(item) {
+            //TODO
+            $scope.hero.equipment[item.itemSlot] = item;
         }
     };
 
@@ -1976,7 +2938,8 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
     $scope.buttonClick = function(incrementAmount) {
         $scope.increment(incrementAmount);
         $scope.checkUnlocks();
-        dropItems(treasureClasses.tc1, "");
+        var items = dropItems(treasureClasses.tc1, "");
+        giveItem(items, $scope.hero.inventory);
 
         var enemyChoices = levelEnemies[1].enemyPool;
         var enemy = enemyChoices[Math.floor(Math.random() * enemyChoices.length)];
@@ -1988,7 +2951,8 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
     $scope.buttonClick2 = function() {
         $scope.increment(1);
         $scope.checkUnlocks();
-        dropItems(treasureClasses.tc1, "");
+        var items = dropItems(treasureClasses.tc1, "");
+        giveItem(items, $scope.hero.inventory);
 
         //$scope.heroItems.head = $scope.heroItems.chest;
         //$scope.swapItems($scope.heroItems.head, $scope.heroItems.amulet);

@@ -2,8 +2,29 @@
 
 body {
     background-color: #222430;
+    /*background-image: url("bg.jpg");*/
     color: #FFFFFF;
     font-family: sans-serif;
+}
+
+h1 {
+    margin: 0px 0px 0px 0px;
+}
+
+/* Navigation */
+
+.navbar {
+    background-color: #1A1C28;
+    color: #FFFFFF !important;
+    border-color: #1A1C28;
+    box-shadow: 0px 0px 0px 1px #323440;
+    -moz-border-radius: 0px;
+    border-radius: 0px;
+    margin-bottom: 16px !important;
+}
+
+li.active a {
+    background-color: #323440 !important;
 }
 
 /* Buttons */
@@ -111,6 +132,33 @@ td img {
 
 }
 
+.skillTable {
+
+}
+
+.skillTable td span.active {
+    border: solid 2px;
+    border-color: #55CCEE !important;
+    box-shadow: 0px 0px 5px #55CCEE;
+}
+
+.skillTable td span.inactive {
+    border: solid 2px;
+    border-color: #000000 !important;
+}
+
+.inventoryTable {
+    padding: 0px 0px 7px 7px;
+    border: solid 1px;
+    display: block;
+}
+
+.inventoryTable td {
+    padding: 7px 7px 0px 0px;
+    border: none 0px;
+    display: inline-block;
+}
+
 /* Images */
 
 img {
@@ -136,51 +184,36 @@ img {
 
 .progress-bar {
     min-width: 0px !important;
+}
+
+.no-animations {
     -webkit-transition: none;
     -moz-transition: none;
     -ms-transition: none;
     -o-transition: none;
     transition: none;
+    width: 0px;
+}
+
+.animated {
+    -webkit-transition: linear 0.1s;
+    -moz-transition: linear 0.1s;
+    -ms-transition: linear 0.1s;
+    -o-transition: linear 0.1s;
+    transition: linear 0.1s;
 }
 
 /* Fixes */
 
 .fix-padding {
-    padding-left: 0px !important;
-    padding-right: 0px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
 }
 
-/* Item Tooltips */
+/* All Tooltips */
 
-.item-header {
-    padding: 10px 5px 10px 5px;
-    margin: 0px;
-    font-weight: bold;
-}
-
-div.rarity-normal {
-    background-color: #DDDDDD;
-    color: #000000;
-}
-
-div.rarity-magic {
-    background-color: #445588;
-    color: #000000;
-}
-
-div.rarity-rare {
-    background-color: #FFBB00;
-    color: #000000;
-}
-
-div.rarity-mystical {
-    background-color: #996622;
-    color: #000000;
-}
-
-div.rarity-set {
-    background-color: #00BB44;
-    color: #000000;
+.tooltip-extend {
+    max-width: 100% !important;
 }
 
 .ui-tooltip {
@@ -199,3 +232,126 @@ div.rarity-set {
     padding: 0px !important;
     margin: 0px !important;
 }
+
+/* Item Tooltips */
+
+.item-tooltip {
+    background-color: #111111;
+    text-align: center;
+}
+
+.item-header {
+    padding: 10px 8px 10px 8px;
+    margin: 0px;
+    font-weight: bold;
+}
+
+.item-information {
+    color: #CCCCCC;
+    padding: 10px 8px 10px 8px;
+    margin: 0px;
+}
+
+.item-description {
+    color: #55CCEE;
+    padding: 10px 8px 10px 8px;
+    margin: 0px;
+    font-style: italic;
+}
+
+.item-divider {
+    height: 1px !important;
+    background-color: #CCCCCC;
+    box-shadow: 0px 2px 3px #000000 !important;
+    -moz-border-radius: 0px !important;
+    border-radius: 0px !important;
+}
+
+.item-mods {
+    padding: 10px 8px 10px 8px;
+    color: #445599;
+}
+
+div.rarity-normal {
+    background-color: #DDDDDD;
+    color: #000000;
+}
+
+div.rarity-magic {
+    background-color: #445599;
+    color: #000000;
+}
+
+div.rarity-rare {
+    background-color: #FFBB00;
+    color: #000000;
+}
+
+div.rarity-mystical {
+    background-color: #B5641C;
+    color: #000000;
+}
+
+div.rarity-set {
+    background-color: #00BB44;
+    color: #000000;
+}
+
+/* Skill Tooltips */
+
+.skill-tooltip {
+    background-color: #111111;
+    text-align: center;
+}
+
+.skill-header {
+    background-color: #000000;
+    color: #55CCEE;
+    padding: 10px 8px 10px 8px;
+    margin: 0px;
+    font-weight: bold;
+}
+
+.skill-description {
+    color: #55CCEE;
+    padding: 10px 8px 10px 8px;
+    margin: 0px;
+    font-style: italic;
+}
+
+.skill-divider {
+    height: 1px !important;
+    background-color: #55CCEE;
+    box-shadow: 0px 2px 3px #000000 !important;
+    -moz-border-radius: 0px !important;
+    border-radius: 0px !important;
+}
+
+.skill-data {
+    padding: 10px 8px 10px 8px;
+}
+
+/* Items */
+
+.item-outer {
+    background-position: 2px 2px;
+    padding: 0px !important;
+    margin: 0px;
+}
+
+.item-hover {
+    border: solid 2px;
+    border-color: #DDDDDD !important;
+    box-shadow: 0px 0px 5px #DDDDDD;
+}
+
+.item-quantity:after {
+    content: attr(quantity);
+    color: #FFFFFF;
+    text-shadow: 1px 1px #000000;
+    position: absolute;
+    top: 48px;
+    right: 4px;
+    cursor: default;
+}
+

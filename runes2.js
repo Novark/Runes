@@ -1,4 +1,4 @@
-/* jslint multistr: true */
+/*jslint multistr: true */
 
 /*
 Notes:
@@ -13,7 +13,7 @@ Themes:
 7. Jungle (Ivory Tropics)
 8. Arcane (Realm of the Four)
 9. Sky (Shimmering Expanse)
-10. Celestial (Aurellis) / Aurellians
+10. Celestial (Aurellis) / Aurellians / Spectral Plains
 11. Overgrown Ruins
 12. Crypt
 
@@ -99,37 +99,57 @@ function newItem() {
 }
 
 app.directive('item', function() {
-    var contentContainer;
     return {
         restrict: "E",
         scope: {
             itemData: "=data",
-            itemHelpers: "=helper"
+            itemHelpers: "=helper",
+            itemSlot: "@slot"
         },
         link: function(scope, element, attrs) {
             $(function() {
                 //Hover
-                $(element).hover(function() {
-                    $(element).find("span.item-inner").toggleClass("item-hover");
+                //$(element).hover(function() {
+                //    $(element).find("span.item-inner").toggleClass("item-hover");
+                //});
+
+                //Mouse Over
+                $(element).find("span.item-outer").mouseover(function() {
+                    $(element).find("span.item-inner").addClass("item-hover");
+                });
+
+                //Mouse Out
+                $(element).find("span.item-outer").mouseout(function() {
+                    $(element).find("span.item-inner").removeClass("item-hover");
                 });
 
                 //Double Click
                 $(element).dblclick(function() {
-                    //alert("Double Clicked!");
-                    scope.itemHelpers.swapItems(scope.itemData);
+                    //alertfind("span.item-outer").("Double Clicked!");
+                    //scope.itemHelpers.swapItems(scope.itemData);
                 });
 
                 //Mouse Down
-                $(element).mousedown(function() {
+                $(element).find("span.item-outer").mousedown(function() {
                     $(this).css("z-index", 100);
                 });
 
                 //Draggable
-                $(element).draggable({
+                $(element).find("span.item-outer").draggable({
                     start: function(event, ui) {
+                        $(this).css("opacity", 0.25);
                         console.log("Start!");
+                        scope.itemHelpers.setItemSource(scope.itemData);
+                        if (scope.itemData === null) {
+                            $(this).css("opacity", 1);
+                            return false;
+                        }
+                        //scope.itemHelpers.setTargetSource(scope.itemData);
                         //$(element).find("span.item-inner").removeClass("item-hover");
                         //$(ui.helper).find('.tooltip').hide();
+                    },
+                    stop: function(event, ui) {
+                        $(this).css("opacity", 1);
                     },
                     helper: 'clone',
                     revert: 'invalid',
@@ -146,63 +166,36 @@ app.directive('item', function() {
                     out: function(event, ui) {
                         console.log("out");
                         $(element).find("span.item-inner").removeClass("item-hover");
+                        return false;
                     },
 
                     drop: function(event, ui) {
                         console.log("Dropped!");
+                        $(element).find("span.item-outer").uitooltip();
+                        $(element).find("span.item-outer").uitooltip('disable');
+                        scope.itemHelpers.setItemTarget(scope.itemData);
+                        setTimeout(function() {
+                            $(element).find("span.item-outer").uitooltip('enable');
+                            $(".ui-tooltip").css("display", "none");
+                            $(element).find("span.item-inner").removeClass("item-hover");
+                            scope.itemHelpers.swapItems("inventory", scope.itemSlot);
+                        }, 1);
                         $(element).find("span.item-inner").removeClass("item-hover");
+                        return false;
                     }
                 });
 
                 //Tooltip
-                $(element).uitooltip({
+                $(element).find("span.item-outer").uitooltip({
                     items: "*",
-                    position: {at: "right+16 top-15"},
+                    position: {at: "right+7 top-15"},
                     tooltipClass: "tooltip-extend",
                     content: function() {
-                        var itemHTML = "";
-                        itemHTML += "<div class='item-tooltip'>";
-                        
-                        itemHTML += "<div class='item-header rarity-" + scope.itemData.rarity +"'>Prefix " + scope.itemData.name + " of Suffix</div>";
-                        
-                        //itemHTML += "<div class='item-divider'></div>";
-                        itemHTML += "<div class='item-information'>";
-                        itemHTML += "Item Type: " + scope.itemData.type + "<br>";
-                        itemHTML += "Damage: " + "1" + " to " + "3" + "<br>";
-                        if (scope.itemData.sockets !== 0) {
-                            itemHTML += "Sockets: <font color='#ff6600'>" + (scope.itemData.sockets).toString() + "</font>";
-                        } else {
-                            itemHTML += "Sockets: <font color='#ff6600'>None</font>";
+                        if (scope.itemData === null) {
+                            return false;
                         }
-                        itemHTML += "</div>";
-                        itemHTML += "<div class='item-divider'></div>";
-                        
-                        itemHTML += "<div class='item-mods'>";
-                        itemHTML += scope.itemData.image;
-                        itemHTML += "</div>";
-
-                        itemHTML += "</div>";
-
-                        /*
-                        itemHTML += "<div class='item-tooltip'>";
-                        itemHTML += "<div class='item-header rarity-" + scope.itemData.rarity +"'>Magic " + scope.itemData.name + " of Magicness</div>";
-                        itemHTML += "<div class='item-information'>";
-                        itemHTML += scope.itemData.type;
-                        itemHTML += "<div class='item-divider'></div>";
-                        itemHTML += "</div>";
-                        itemHTML += "<div class='item-mods'>";
-
-
-                        //if (scope.itemData.sockets !== 0) {
-                        //    itemHTML += "Sockets: <font color='#ff6600'>" + (scope.itemData.sockets).toString() + "</font>";
-                        //} else {
-                        //    itemHTML += "Sockets: <font color='#ff6600'>None</font>";
-                        //}
-
-                        itemHTML += "Image: " + scope.itemData.image;
-                        itemHTML += "</div>";
-                        itemHTML += "</div>";
-                        */
+                        console.log(scope.itemSlot);
+                        var itemHTML = scope.itemData.getHTMLHeader() + scope.itemData.getHTMLBody() + scope.itemData.getHTMLFooter();
                         return itemHTML;
                     },
                     //position: {my: "right center", at: "right top+16"},
@@ -216,19 +209,19 @@ app.directive('item', function() {
                     hide: {duration: 0}
                 });
                 $(element).click(function() {
+                    //$(".ui-tooltip").siblings(".ui-tooltip").css("display", "none");
                     //$(element).tooltip("close");
                 });
             });
         },
         template: "<span class=\"item-outer\" style=\"width: 68px; height: 68px; background-image: url('bg_{{itemData.rarity}}.png'); display: block;\">\
-                    <span class=\"item-inner\" style=\"width: 68px; height: 68px; background-image: url('{{itemData.image}}'); display: block; border: 2px solid #DDDDDD\"></span></span>"
+                    <span class=\"item-inner\" style=\"width: 68px; height: 68px; background-image: url('{{itemData.image}}'); display: block; border: 2px solid #000000\"></span></span>"
         //template: "<img src={{itemData.type.image}} style='border: 2px solid #DDDDDD !important'>"
         //templateUrl: 'item.html'
     };
 });
 
 app.directive('skill', function() {
-    var contentContainer;
     return {
         restrict: "E",
         scope: {
@@ -248,7 +241,7 @@ app.directive('skill', function() {
                 //Tooltip
                 $(element).uitooltip({
                     items: "*",
-                    position: {at: "right+16 top-15"},
+                    position: {at: "right+7 top-15"},
                     tooltipClass: "tooltip-extend",
                     content: function() {
                         var skillHTML = "";
@@ -408,15 +401,18 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
 
             "class": {
                 "WEAPON": 0,
-                "ARMOUR": 1
+                "ARMOUR": 1,
+                "RUNE": 2,
+                "QUESTITEM": 3,
+                "TRADEGOOD": 4
             },
 
-            "quality": {
-                "NORMAL": 0,
-                "MAGIC:": 1,
-                "RARE": 2,
-                "SET": 3,
-                "MYSTICAL": 4
+            "rarity": {
+                "NORMAL": "normal",
+                "MAGIC": "magic",
+                "RARE": "rare",
+                "SET": "set",
+                "MYSTICAL": "mystical"
             }
         }
     };
@@ -477,6 +473,18 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
 
     */
 
+    //Contains all of the items that are currently equipped on the hero
+    var heroItems = {
+        "head": {"type": 0, "image": "helm.png", "baseArmour": 5, "sockets": 1, "rarity": "mystical"},
+        "chest": {"type": 0, "image": "temp.png", "baseArmour": 5, "sockets": 3, "rarity": "set"},
+        "hands": {"type": 0, "image": "temp2.png", "baseArmour": 5, "sockets": 2, "rarity": "magic"},
+        "legs": {"type": 0, "image": "temp3.png", "baseArmour": 5, "sockets": 4, "rarity": "normal"},
+        "feet": {"type": 0, "image": "temp.png", "baseArmour": 5, "sockets": 1, "rarity": "normal"},
+        "ringLeft": {"type": 0, "image": "temp2.png", "baseArmour": 5, "sockets": 0, "rarity": "magic"},
+        "ringRight": {"type": 0, "image": "temp3.png", "baseArmour": 5, "sockets": 0, "rarity": "rare"},
+        "amulet": null
+    };
+
     var heroBaseStats = {
         /* Defensive */
         "health": 50,
@@ -506,17 +514,8 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
     $scope.hero = {
         "name": null,
         "stats": heroBaseStats,
-        "inventory": [
-            {"type": 0, "image": "helm.png", "baseArmour": 0, "sockets": 0, "rarity": "magic"},
-            {"type": 0, "image": "temp.png", "baseArmour": 0, "sockets": 0, "rarity": "set"},
-            {"type": 0, "image": "helm.png", "baseArmour": 0, "sockets": 0, "rarity": "normal"},
-            {"type": 0, "image": "temp2.png", "baseArmour": 0, "sockets": 0, "rarity": "magic"},
-            {"type": 0, "image": "helm.png", "baseArmour": 0, "sockets": 0, "rarity": "rare"},
-            {"type": 0, "image": "temp.png", "baseArmour": 0, "sockets": 0, "rarity": "rare"},
-            {"type": 0, "image": "temp2.png", "baseArmour": 0, "sockets": 0, "rarity": "magic"},
-            {"type": 0, "image": "temp.png", "baseArmour": 0, "sockets": 0, "rarity": "mystical"},
-            {"type": 0, "image": "helm.png", "baseArmour": 0, "sockets": 0, "rarity": "set"}
-        ],
+        "inventory": [],
+        "equipment": heroItems,
         "questLog": [],
         "inCombat": false,
         "target": null,
@@ -577,8 +576,8 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
             }
         },
 
-        "magicMissile": {
-            "name": "Magic Missile",
+        "arcaneBarrage": {
+            "name": "Arcane Barrage",
             "description": "Flavour text goes here",
             "unlocksAt": {"floor": 1, "strength": 5, "agility": 5, "intelligence": 10},
             "image": "magic2.png",
@@ -803,14 +802,51 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
 
     /* Item Class */
     function Item() {
-        //An item is any object that can be placed in a player's inventory
+        //An item is any object that can be placed in a player's inventory, and shows a tooltip when hovered over with the cursor
+        this.image = null;
     }
+
+    Item.prototype.setRarity = function(rarity) {
+        this.rarity = rarity;
+    };
+
+    Item.prototype.setItemName = function(itemName) {
+        this.itemName = itemName;
+    };
+
+    Item.prototype.getHTMLHeader = function() {
+        var itemHTML = "";
+
+        itemHTML += "<div class='item-tooltip'>";
+        itemHTML += "<div class='item-header rarity-" + this.rarity +"'>" + this.itemName + "</div>";
+
+        return itemHTML;
+    };
+
+    Item.prototype.getHTMLBody = function() {
+        return "Temporary";
+    };
+
+    Item.prototype.getHTMLFooter = function() {
+        return "</div>";
+    };
 
     /* Equipable Class */
     function Equipable() {
-        //An equipable is any object that can be placed on a player's hero
+        //An equipable is any item that can be placed on a player's hero
         Item.call(this);
+        this.affixes = [];
+        this.affixDisplayText = [];
     }
+
+    Equipable.prototype = Object.create(Item.prototype);
+    Equipable.prototype.constructor = Equipable;
+    Equipable.prototype.addAffixes = function(affixes) {
+        this.affixes = affixes;
+        for (var affix in affixes) {
+            this.affixDisplayText.push(affixes[affix].displayText);
+        }
+    };
 
     /* Socketable Class */
     function Socketable() {
@@ -818,17 +854,90 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         Equipable.call(this); //May need to inherit from Item() instead of Equipable()...
     }
 
+    Socketable.prototype = Object.create(Item.prototype);
+    Socketable.prototype.constructor = Socketable;
+
     /* Weapon Class */
-    function Weapon() {
+    function Weapon(weaponData) {
         //A weapon is any object that can be used to attack enemies, and can be fitted into a hero's weapon slot
         Equipable.call(this);
+
+        this.image = weaponData.image;
+        this.weaponType = "Weapon";
+        this.damageMin = weaponData.damageBase[0];
+        this.damageMax = weaponData.damageBase[1];
+        this.critChance = 0;
+        this.aps = weaponData.apsBase;
+        this.sockets = 1;
     }
 
+    Weapon.prototype = Object.create(Equipable.prototype);
+    Weapon.prototype.constructor = Weapon;
+
+    Weapon.prototype.getHTMLBody = function() {
+        var itemHTML = "";
+
+        //itemHTML += "<div class='item-divider'></div>";
+        itemHTML += "<div class='item-information'>";
+        itemHTML += "Item Type: " + this.weaponType + "<br>";
+        itemHTML += "Damage: " + this.damageMin + " to " + this.damageMax + "<br>";
+        itemHTML += "Attacks per Second: " + this.aps + "<br>";
+        if (this.sockets !== 0) {
+            itemHTML += "Sockets: <font color='#ff6600'>" + (this.sockets).toString() + "</font>";
+        } else {
+            itemHTML += "Sockets: <font color='#ff6600'>None</font>";
+        }
+        itemHTML += "</div>";
+
+        itemHTML += "<div class='item-divider'></div>";
+
+        itemHTML += "<div class='item-mods'>";
+        for (var affix in this.affixDisplayText) {
+            itemHTML += this.affixDisplayText[affix] + "<br>";
+        }
+        itemHTML += "</div>";
+
+        return itemHTML;
+    };
+
     /* Armour Class */
-    function Armour() {
+    function Armour(armourData) {
         //Armour is any object that can be fitted into any of a hero's armour slots
         Equipable.call(this);
+
+        this.image = armourData.image;
+        this.armourType = "Armour";
+        this.armour = 0;
+        this.sockets = 1;
     }
+
+    Armour.prototype = Object.create(Equipable.prototype);
+    Armour.prototype.constructor = Armour;
+
+    Armour.prototype.getHTMLBody = function() {
+        var itemHTML = "";
+
+        //itemHTML += "<div class='item-divider'></div>";
+        itemHTML += "<div class='item-information'>";
+        itemHTML += "Item Type: " + this.armourType + "<br>";
+        itemHTML += "Armour: " + this.armour + "<br>";
+        if (this.sockets !== 0) {
+            itemHTML += "Sockets: <font color='#ff6600'>" + (this.sockets).toString() + "</font>";
+        } else {
+            itemHTML += "Sockets: <font color='#ff6600'>None</font>";
+        }
+        itemHTML += "</div>";
+
+        itemHTML += "<div class='item-divider'></div>";
+
+        itemHTML += "<div class='item-mods'>";
+        for (var affix in this.affixDisplayText) {
+            itemHTML += this.affixDisplayText[affix] + "<br>";
+        }
+        itemHTML += "</div>";
+
+        return itemHTML;
+    };
 
     /* Rune Class */
     function Rune() {
@@ -836,11 +945,17 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         Socketable.call(this);
     }
 
+    Rune.prototype = Object.create(Socketable.prototype);
+    Rune.prototype.constructor = Rune;
+
     /* Quest Item Class */
     function QuestItem() {
         //A quest item is any object that is required for a specific quest
         Item.call(this);
     }
+
+    QuestItem.prototype = Object.create(Item.prototype);
+    QuestItem.prototype.constructor = QuestItem;
 
     /* Trade Good Class */
     function TradeGood() {
@@ -848,27 +963,16 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         Item.call(this);
     }
 
+    TradeGood.prototype = Object.create(Item.prototype);
+    TradeGood.prototype.constructor = TradeGood;
 
 
 
 
 
-    //Defines the item base-types, and the properties that are common across
-    //all items of this type
-    //TODO: Sort these into categories (e.g. chest {chest1, chest2, chest3}, etc...)
 
-    var itemTypes = {
-        "head1": {"image": "helm.png", "baseArmour": 5},
-        "chest1": {"image": "temp2.png", "baseArmour": 20},
-        "hands1": {"image": "temp.png", "baseArmour": 5},
-        "legs1": {"image": "temp.png", "baseArmour": 5},
-        "legs2": {"image": "temp2.png", "baseArmour": 10},
-        "legs3": {"image": "temp3.png", "baseArmour": 15},
-        "feet1": {"image": "temp.png", "baseArmour": 5},
-        "ring1": {"image": "temp3.png", "baseArmour": 0},
-        "ring2": {"image": "temp3.png", "baseArmour": 0},
-        "amulet1": {"image": "temp2.png", "baseArmour": 0}
-    };
+
+
 
     //Item type definitions
 
@@ -878,7 +982,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
             "name": "Stone Sword",
             "type": constants.item.type.weapon.SWORD,
             "class": constants.item.class.WEAPON,
-            "image": "rune1.png",
+            "image": "sword.png",
             "damageBase": [1, 5],
             "apsBase": 1.2,
             "critBase": 5,
@@ -917,7 +1021,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
             "name": "Wooden Staff",
             "type": constants.item.type.weapon.STAFF,
             "class": constants.item.class.WEAPON,
-            "image": "helm.png",
+            "image": "axe.png",
             "damageBase": [1, 7],
             "apsBase": 1,
             "critBase": 4,
@@ -930,7 +1034,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
             "name": "Cedar Bow",
             "type": constants.item.type.weapon.BOW,
             "class": constants.item.class.WEAPON,
-            "image": "helm.png",
+            "image": "rune1.png",
             "damageBase": [1, 5],
             "apsBase": 1.4,
             "critBase": 6.5,
@@ -972,37 +1076,30 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
                     [itemTypes1.head1, 7]
                 ]
             }
+        },
+
+        tc2: {
+            "level": 1,
+            "drops": 1,
+            "rarity": {
+                "none": 0,
+                "list": [
+                    ["normal", 50],
+                    ["magic", 30],
+                    ["rare", 10],
+                    ["set", 2],
+                    ["mystical", 1]
+                ]
+            },
+            "items": {
+                "none": 0,
+                "list": [
+                    ["tc1", 10],
+                    [itemTypes1.sword1, 1],
+                ]
+            }
         }
-    };
 
-    //Prefixes
-    var prefix1 = {
-        "dmg1": {"level": 1, "min": [1, 2], "max": [3, 5], "text": "Heavy"},
-        "cc1": {"level": 1, "min": [1, 2], "max": [5, 10], "text": "Sharp"},
-        "str1": {"level": 1, "min": [1, 3], "max": [4, 5], "text": "Brawler's"},
-        "agi1": {"level": 1, "min": [1, 3], "max": [4, 5], "text": "Tracker's"},
-        "int1": {"level": 1, "min": [1, 3], "max": [4, 5], "text": "Student's"},
-        "all1": {"level": 1, "min": [1, 2], "max": [3, 5], "text": "Journeyman's"},
-        "manaregen1": {"level": 1, "min": [1, 2], "max": [3, 4], "text": "Trickling"}
-    };
-
-    //Suffixes
-    var suffix1 = {
-        "cm1": {"level": 1, "min": [1, 5], "max": [6, 10], "text": "of Fury"},
-        "maxmana1": {"level": 1, "min": [1, 5], "max": [6, 10], "text": "from the Stream"},
-        "manatick1": {"level": 1, "min": [1, 2], "max": [3, 4], "text": "of Quickening"}
-    };
-
-    //Contains all of the items that are currently equipped on the main hero
-    $scope.heroItems = {
-        "head": {"type": 0, "image": "helm.png", "baseArmour": 5, "sockets": 1, "rarity": "mystical"},
-        "chest": {"type": 0, "image": "temp.png", "baseArmour": 5, "sockets": 3, "rarity": "set"},
-        "hands": {"type": 0, "image": "temp2.png", "baseArmour": 5, "sockets": 2, "rarity": "magic"},
-        "legs": {"type": 0, "image": "temp3.png", "baseArmour": 5, "sockets": 4, "rarity": "normal"},
-        "feet": {"type": 0, "image": "temp.png", "baseArmour": 5, "sockets": 1, "rarity": "normal"},
-        "ringLeft": {"type": 0, "image": "temp2.png", "baseArmour": 5, "sockets": 0, "rarity": "magic"},
-        "ringRight": {"type": 0, "image": "temp3.png", "baseArmour": 5, "sockets": 0, "rarity": "rare"},
-        "amulet": {"type": 0, "image": "temp.png", "baseArmour": 5, "sockets": 0, "rarity": "mystical"}
     };
 
     //TODO: Swap two items
@@ -1020,6 +1117,258 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         "R4": {p1: 1, p2: 2, p3: 3},
         "R5": {p1: 1, p2: 2, p3: 3}
     };
+
+    var affixes = {
+        "prefixes": {
+            getWeights: function() {
+                var weights = {
+                    "none": 0,
+                    "list": [
+                        [this.affixes.phys_dmg, 10, 1],
+                        [this.affixes.crit_chance, 10, 1],
+                        [this.affixes.strength, 10, 1],
+                        [this.affixes.agility, 10, 1],
+                        [this.affixes.intelligence, 10, 1],
+                        [this.affixes.all_attributes, 10, 1],
+                        [this.affixes.mana_regen, 10, 1],
+                        [this.affixes.attack_speed, 10, 1]
+                    ]
+                };
+                return weights;
+            },
+            "affixes": {
+                "phys_dmg": {
+                    "dmg1": {"level": 1, get: function() {return new PhysicalDamage(1, [1, 2], [3, 5], "Heavy");}},
+                    "dmg2": {"level": 2, get: function() {return new PhysicalDamage(2, [4, 5], [6, 8], "Very Heavy");}}
+                },
+                "crit_chance": {
+                    "cc1": {"level": 1, get: function() {return new CriticalChance(1, [1, 2], "Sharp");}},
+                    "cc2": {"level": 2, get: function() {return new CriticalChance(2, [3, 4], "Very Sharp");}}
+                },
+                "strength": {
+                    "str1": {"level": 1, get: function() {return new Strength(1, [1, 2], "Brawler's");}},
+                    "str2": {"level": 2, get: function() {return new Strength(2, [3, 4], "Warrior's");}}
+                },
+                "agility": {
+                    "agi1": {"level": 1, get: function() {return new Agility(1, [1, 2], "Tracker's");}},
+                    "agi2": {"level": 2, get: function() {return new Agility(2, [3, 4], "Acrobat's");}}
+                },
+                "intelligence": {
+                    "int1": {"level": 1, get: function() {return new Intelligence(1, [1, 2], "Student's");}},
+                    "int2": {"level": 2, get: function() {return new Intelligence(2, [3, 4], "Professor's");}}
+                },
+                "all_attributes": {
+                    "all1": {"level": 1, get: function() {return new AllAttributes(1, [1, 3], "Journeyman's");}},
+                    "all2": {"level": 2, get: function() {return new AllAttributes(2, [4, 5], "Wanderer's");}}
+                },
+                "mana_regen": {
+                    "mr1": {"level": 1, get: function() {return new ManaRegeneration(1, [1, 3], "Trickling");}},
+                    "mr2": {"level": 2, get: function() {return new ManaRegeneration(2, [4, 5], "Flowing");}}
+                },
+                "attack_speed": {
+                    "as1": {"level": 1, get: function() {return new AttackSpeed(1, [1, 5], "Rabbit's");}},
+                    "as2": {"level": 2, get: function() {return new AttackSpeed(2, [6, 10], "Cheetah's");}}
+                }
+            }
+        },
+
+        "suffixes": {
+            getWeights: function() {
+                var weights = {
+                    "none": 0,
+                    "list": [
+                        [this.affixes.crit_multiply, 10, 1],
+                        [this.affixes.max_mana, 10, 1],
+                        [this.affixes.mana_regen_rate, 10, 1]
+                    ]
+                };
+                return weights;
+            },
+            "affixes": {
+                "crit_multiply": {
+                    "cm1": {"level": 1, get: function() {return new CriticalMultiplier(1, [1, 2], "of Fury");}},
+                    "cm2": {"level": 2, get: function() {return new CriticalMultiplier(2, [3, 5], "of Whirling Fury");}}
+                },
+                "max_mana": {
+                    "maxmana1": {"level": 1, get: function() {return new MaximumMana(1, [1, 2], "from the Stream");}},
+                    "maxmana2": {"level": 2, get: function() {return new MaximumMana(2, [3, 5], "from the River");}}
+                },
+                "mana_regen_rate": {
+                    "mrr1": {"level": 1, get: function() {return new ManaRegenerationRate(1, [1, 2], "of Quickening");}},
+                    "mrr2": {"level": 2, get: function() {return new ManaRegenerationRate(2, [3, 5], "of Swiftness");}}
+                }
+            }
+        }
+    };
+
+    /* Affix Class */
+    function Affix() {
+        //An affix is any modifier that can be found on an item
+    }
+
+    /* Prefix Class */
+    function Prefix() {
+        //A prefix is any modifier that can be found on an item
+        Affix.call(this);
+    }
+
+    Prefix.prototype = Object.create(Affix.prototype);
+    Prefix.prototype.constructor = Prefix;
+
+    /* Suffix Class */
+    function Suffix() {
+        //A suffix is any modifier that can be found on an item
+        Affix.call(this);
+    }
+
+    Suffix.prototype = Object.create(Affix.prototype);
+    Suffix.prototype.constructor = Suffix;
+
+    /* Physical Damage Class */
+    function PhysicalDamage(level, min, max, text) {
+        //Physical damage is damage which does not have any status effects
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.min = _.random(min[0], min[1]);
+        this.max = _.random(max[0], max[1]);
+        this.displayText = this.min + " - " + this.max + " Physical Damage";
+    }
+
+    PhysicalDamage.prototype = Object.create(Prefix.prototype);
+    PhysicalDamage.prototype.constructor = PhysicalDamage;
+
+    /* Critical Chance Class */
+    function CriticalChance(level, amount, text) {
+        //Critical chance is the chance to deal an amount of damage which is multiplied by the critical multiplier
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + "% Critical Chance";
+    }
+
+    CriticalChance.prototype = Object.create(Prefix.prototype);
+    CriticalChance.prototype.constructor = CriticalChance;
+
+    /* Strength Class */
+    function Strength(level, amount, text) {
+        //Strength is the affix which increases the physical damage done by the hero
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " Strength";
+    }
+
+    Strength.prototype = Object.create(Prefix.prototype);
+    Strength.prototype.constructor = Strength;
+
+    /* Agility Class */
+    function Agility(level, amount, text) {
+        //Agility is the affix which increases the speed at which the hero can attack
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " Agility";
+    }
+
+    Agility.prototype = Object.create(Prefix.prototype);
+    Agility.prototype.constructor = Agility;
+
+    /* Intelligence Class */
+    function Intelligence(level, amount, text) {
+        //Intelligence is the affix which increases the hero's magic damage
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " Intelligence";
+    }
+
+    Intelligence.prototype = Object.create(Prefix.prototype);
+    Intelligence.prototype.constructor = Intelligence;
+
+    /* All Attributes Class */
+    function AllAttributes(level, amount, text) {
+        //All attributes is the affix which increases the hero's strength, agility and intelligence
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " to All Attributes";
+    }
+
+    AllAttributes.prototype = Object.create(Prefix.prototype);
+    AllAttributes.prototype.constructor = AllAttributes;
+
+    /* Mana Regeneration Class */
+    function ManaRegeneration(level, amount, text) {
+        //Mana regeneration is the affix which increases the amount of mana that the hero regenerates
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " Mana Regeneration";
+    }
+
+    ManaRegeneration.prototype = Object.create(Prefix.prototype);
+    ManaRegeneration.prototype.constructor = ManaRegeneration;
+
+    /* Attack Speed Class */
+    function AttackSpeed(level, amount, text) {
+        //Attack speed is the affix which affects how fast a hero can attack
+        Prefix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + "% Faster Attack Speed";
+    }
+
+    AttackSpeed.prototype = Object.create(Prefix.prototype);
+    AttackSpeed.prototype.constructor = AttackSpeed;
+
+
+
+    /* Critical Multiplier Class */
+    function CriticalMultiplier(level, amount, text) {
+        //Critical multiplier is the multiplier for any damage which is dealt from a critical hit
+        Suffix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + "% Critical Multiplier";
+    }
+
+    CriticalMultiplier.prototype = Object.create(Suffix.prototype);
+    CriticalMultiplier.prototype.constructor = CriticalMultiplier;
+
+    /* Maximum Mana Class */
+    function MaximumMana(level, amount, text) {
+        //Maximum mana adds to the hero's total mana pool
+        Suffix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " to Maximum Mana";
+    }
+
+    MaximumMana.prototype = Object.create(Suffix.prototype);
+    MaximumMana.prototype.constructor = MaximumMana;
+
+    /* Mana Regeneration Rate Class */
+    function ManaRegenerationRate(level, amount, text) {
+        //Mana regeneration rate is the affix which decreases the amount of time that it takes for the hero to regenerate mana
+        Suffix.call(this);
+        this.level = level;
+        this.text = text;
+        this.amount = _.random(amount[0], amount[1]);
+        this.displayText = "+" + this.amount + " Mana Regeneration Rate";
+    }
+
+    ManaRegenerationRate.prototype = Object.create(Suffix.prototype);
+    ManaRegenerationRate.prototype.constructor = ManaRegenerationRate;
 
     /*
 
@@ -1041,32 +1390,117 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         var items = [];
 
         var drops = treasureClass.drops;
-        var dropSum = weightSum(treasureClass.items);
+        //var dropSum = weightSum(treasureClass.items);
 
-        //Get the base item type, and determine which quality to upgrade the item to
+        //Define the affix getter
+        var affixGetter = function() {
+            //Choose a suffix or prefix
+            var affixSection = _.sample(["prefixes", "suffixes"], 1)[0];
+
+            //Do the pre-filtering
+            var floor = gameFloors.currentFloor.index;
+            var filteredAffixGroups = preFilterAffixGroups(floor, affixSection);
+
+            //Select an affix group from the filtered affix groups
+            var affixGroupSelection = selectFromWeights(filteredAffixGroups);
+
+            //Select an affix from the selected group
+            var affix = chooseAffix(floor, affixGroupSelection);
+
+            console.log("FilteredAffixGroups = ", filteredAffixGroups);
+            console.log("AffixGroupSelection = ", affixGroupSelection);
+            console.log("Affix =", affix);
+
+            return affix.get();
+
+        };
+
+        var getItem = function(tc) {
+            var item = selectFromWeights(tc.items);
+            if (item === null) {
+                return null;
+            } else {
+                if (typeof item === "string") {
+                    item = getItem(treasureClasses[item]);
+                }
+            }
+
+            return item;
+        };
+
+        //Get the base item type, and determine which rarity to upgrade the item to
         for (var i = 1; i <= drops; i++) {
             var item = null;
             var rarity = null;
 
-            //Get the base item type
-            item = {};
-            var newItem = selectFromWeights(treasureClass.items);
+            //Choose a random base item type to drop
+            var newItem = getItem(treasureClass);
 
-            //Select the quality
             if (newItem !== null) {
-                jQuery.extend(item, newItem);
+                //Figure out which item type to generate, based on the base item type
+                switch(newItem.class) {
+                    case constants.item.class.WEAPON:
+                        item = new Weapon(newItem);
+                        break;
+
+                    case constants.item.class.ARMOUR:
+                        item = new Armour(newItem);
+                        break;
+                }
+
+                //Select the rarity
                 rarity = selectFromWeights(treasureClass.rarity);
-                item.rarity = rarity;
-                item.sockets = 0;
-                item.id = getUniqueID();
+                item.setRarity(rarity);
+
+                //Figure out whether to choose a preset drop (i.e., a mystical or set item), or simply generate random affixes
+                if (rarity === constants.item.rarity.SET || rarity === constants.item.rarity.MYSTICAL) {
+                    //Find a preset item with the specified item type and rarity - if none exists, then drop a rare item of the same base type (if possible)
+                    //TODO: Create a preset-item data set with which to consult
+                    //DEBUG for now - the name will either be determined from a preset item, or dynamically based on the affixes that are generated
+                    item.setItemName(newItem.name);
+                } else {
+                    //Set the item affixes
+                    //1. Generate a random number which represents the number of affixes to select, based on the item rarity and the current floor level
+                    var affixCount = 0;
+                    switch(rarity) {
+                        case constants.item.rarity.NORMAL:
+                            affixCount = 1;
+                            break;
+                        case constants.item.rarity.MAGIC:
+                            affixCount = _.random(1, 2); //TODO: Factor in the floor here
+                            break;
+                        case constants.item.rarity.RARE:
+                            affixCount = _.random(3, 6); //TODO: Factor in the floor here
+                            break;
+                    }
+                    //2. Determine whether or not the affixes will be prefixes or suffixes (or both)
+                    //3. Select the affixes which will be used, making sure not to select affixes that belong to the same group more than once (perhaps by selecting the groups first)
+                    //4. Affix groups can potentially have different weights, and floor thresholds that only allow the group to be selected after a certain floor
+                    //5. The affixes within these groups will work the same way as in step 4
+                    var affixes = _.times(affixCount, affixGetter);
+                    console.log("Affixes = ", affixes);
+                    item.addAffixes(affixes);
+                    //DEBUG for now - the name will either be determined from a preset item, or dynamically based on the affixes that are generated
+                    var prefix = "";
+                    var suffix = "";
+                    for (var affix in affixes) {
+                        if (affixes[affix] instanceof Prefix) {
+                            prefix = affixes[affix].text + " ";
+                        } else {
+                            suffix = " " + affixes[affix].text;
+                        }
+                    }
+                    item.setItemName(prefix + newItem.name + suffix);
+
+                }
+
+                //item.sockets = 0;
+                //item.id = getUniqueID();
                 $scope.hero.inventory.push(item);
             } else {
+                //No drop
                 continue;
             }
-
-            //Figure out whether to choose a preset drop (i.e., a mystical or set item), or simply generate random affixes
-
-            //Set the item affixes
 
 
             console.log(i, item);
@@ -1128,6 +1562,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         }
         */
 
+        //Note: The weightList indices need to be in ascending order for this to work correctly
         for (var index in weightList) {
             if (randomNumber <= weightList[index][1]) {
                 return weightList[index][0];
@@ -1137,6 +1572,29 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
         //The function should return before this point
         return undefined;
 
+    }
+
+    //Get only the affix groups that can drop at the current floor or lower
+    function preFilterAffixGroups(floor, affixSection) {
+        affixWeights = affixes[affixSection].getWeights();
+
+        var returnAffixGroups = {
+            "none": affixWeights.none,
+            "list": []
+        };
+
+        returnAffixGroups.list = _.filter(affixWeights.list, function(entry) {return (entry[2] <= floor);});
+
+        return returnAffixGroups;
+    }
+
+    //Select an affix
+    function chooseAffix(floor, affixes) {
+        returnAffixes = _.filter(affixes, function(entry) {return (entry.level <= floor);});
+
+        affix = returnAffixes[_.random(0, returnAffixes.length - 1)];
+
+        return affix;
     }
 
 
@@ -1465,7 +1923,7 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
     var quests = {
         "level1": {
             "boar1": {
-                        "name": "A Witty Quest Title",
+                        "name": "Boars Boars Boars!",
                         "description": "The boars are invading! Defeat as many as possible!",
                         "objectives": [
                                         {"type": constants.quest.type.DEFEAT, "target": enemyDefinitions.boar, "amount": 10, "currentAmount": 0, "status": constants.quest.status.INCOMPLETE}
@@ -1926,9 +2384,55 @@ app.controller('ContentController', ['itemGenerator', '$scope', '$timeout', func
             }
         },
 
-        swapItems: function(item) {
-            var temp = item;
-            $scope.heroItems.head.rarity = "set";
+        swapItems: function(sourceSlot, targetSlot) {
+
+            console.log(sourceSlot, targetSlot);
+            var temp = this.itemTarget;
+            console.log("SOURCE = ", temp);
+            switch(targetSlot) {
+                case "head":
+                    if (sourceSlot === "inventory") {
+                        var itemIndex = _.indexOf($scope.hero.inventory, this.itemSource);
+
+                        this.unequipItem("head");
+                        this.equipItem(this.itemSource, "head"); //TODO: Verify the type first!
+                        $scope.hero.inventory[itemIndex] = temp;
+                        console.log(temp);
+                    }
+                    break;
+
+                case "inventory":
+                    if (sourceSlot === "inventory") {
+                        var itemIndexSource = _.indexOf($scope.hero.inventory, this.itemSource);
+                        var itemIndexTarget = _.indexOf($scope.hero.inventory, this.itemTarget);
+
+                        $scope.hero.inventory[itemIndexTarget] = this.itemSource;
+                        $scope.hero.inventory[itemIndexSource] = temp;
+                        console.log(temp);
+                    }
+                    break;
+            }
+        },
+
+        "itemSource": null,
+
+        "itemTarget": null,
+
+        setItemSource: function(source) {
+            this.itemSource = source;
+        },
+
+        setItemTarget: function(target) {
+            this.itemTarget = target;
+        },
+
+        unequipItem: function(type) {
+            //TODO
+        },
+
+        equipItem: function(item, slot) {
+            //TODO
+            $scope.hero.equipment[slot] = item;
         }
     };
 
